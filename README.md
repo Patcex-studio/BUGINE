@@ -58,6 +58,8 @@ return temp[index];           // Hope the index exists 🤞
 
 **We don't fix bugs. We evolve them.**
 
+![BUGINE](https://img.shields.io/badge/BUGINE-Bunny's%20Unstable%20Gravity%20&%20Interaction%20Numerical%20Engine-ff69b4?style=for-the-badge&logo=rabbitmq)
+
 ---
 
 ## ⚠️ Warning (Read This)
@@ -92,7 +94,7 @@ This is a **prototype**.
 
 ---
 
-![BUGINE](https://img.shields.io/badge/BUGINE-Bunny's%20Unstable%20Gravity%20&%20Interaction%20Numerical%20Engine-ff69b4?style=for-the-badge&logo=rabbitmq)
+
 ![Status](https://img.shields.io/badge/Status-Alpha-red.svg?style=for-the-badge&logo=github) ![Version](https://img.shields.io/badge/Version-0.0.0-yellow.svg?style=for-the-badge&logo=github) ![Stage](https://img.shields.io/badge/Stage-Experimental-red.svg?style=for-the-badge) ![Patcex Studio](https://img.shields.io/badge/Patcex_Studio-Patching_Reality-pink?style=for-the-badge&logo=heart)_-
 
 ---
