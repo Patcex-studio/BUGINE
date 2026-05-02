@@ -76,7 +76,7 @@ This is a **prototype**.
 
 ## 📜 License
 
-**AGPLv3 or commercial** — Share the bugs, share the fixes. 
+**AGPLv3 or commercial** —  This license applies only to the original source code written by the authors of this project. Any external libraries, tools, or dependencies used by BUGINE retain their own respective licenses. You are responsible for complying with those licenses when redistributing or using this software. 
 *Soft Name. Hard Math. Many Bugs.*
 
 ---
