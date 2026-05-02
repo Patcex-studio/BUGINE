@@ -1,0 +1,33 @@
+# Integration Tests
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/physics_integration.cpp)
+    add_executable(physics_integration physics_integration.cpp)
+    target_link_libraries(physics_integration PRIVATE physics_core Catch2::Catch2WithMain)
+    add_test(NAME physics_integration COMMAND physics_integration)
+else()
+    message(WARNING "physics_integration.cpp not found; skipping physics_integration test.")
+endif()
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/flight_integration.cpp)
+    add_executable(flight_integration flight_integration.cpp)
+    target_link_libraries(flight_integration PRIVATE physics_core Catch2::Catch2WithMain)
+    add_test(NAME flight_integration COMMAND flight_integration)
+else()
+    message(WARNING "flight_integration.cpp not found; skipping flight_integration test.")
+endif()
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/vehicle_integration.cpp)
+    add_executable(vehicle_integration vehicle_integration.cpp)
+    target_link_libraries(vehicle_integration PRIVATE physics_core assembly_system combat_systems Catch2::Catch2WithMain)
+    add_test(NAME vehicle_integration COMMAND vehicle_integration)
+else()
+    message(WARNING "vehicle_integration.cpp not found; skipping vehicle_integration test.")
+endif()
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/environment_integration.cpp)
+    add_executable(environment_integration environment_integration.cpp)
+    target_link_libraries(environment_integration PRIVATE physics_core Catch2::Catch2WithMain)
+    add_test(NAME environment_integration COMMAND environment_integration)
+else()
+    message(WARNING "environment_integration.cpp not found; skipping environment_integration test.")
+endif()

@@ -1,0 +1,214 @@
+cmake_minimum_required(VERSION 3.20)
+project(rendering_engine)
+
+# ============================================================================
+# FIND DEPENDENCIES
+# ============================================================================
+
+find_package(Vulkan REQUIRED)
+find_package(glm REQUIRED)
+
+# ============================================================================
+# LIBRARY DEFINITION
+# ============================================================================
+
+set(RENDERING_ENGINE_SOURCES
+    # Main rendering engine
+    src/rendering_engine/rendering_engine.cpp
+    src/rendering_engine/render_pipeline_manager.cpp
+    
+    # Base pipeline
+    src/rendering_engine/pipelines/base_pipeline.cpp
+    
+    # Forward+ Pipeline
+    src/rendering_engine/pipelines/forward_plus_pipeline.cpp
+    
+    # Deferred Shading Pipeline
+    src/rendering_engine/pipelines/deferred_shading_pipeline.cpp
+    
+    # Clustered Shading Pipeline
+    src/rendering_engine/pipelines/clustered_shading_pipeline.cpp
+)
+
+set(RENDERING_ENGINE_HEADERS
+    # Main headers
+    include/rendering_engine/rendering_engine.h
+    include/rendering_engine/render_pipeline_manager.h
+    include/rendering_engine/types.h
+    
+    # Pipeline headers
+    include/rendering_engine/pipelines/base_pipeline.h
+    include/rendering_engine/pipelines/forward_plus_pipeline.h
+    include/rendering_engine/pipelines/deferred_shading_pipeline.h
+    include/rendering_engine/pipelines/clustered_shading_pipeline.h
+)
+
+# Create rendering engine library
+add_library(rendering_engine STATIC ${RENDERING_ENGINE_SOURCES} ${RENDERING_ENGINE_HEADERS})
+
+target_include_directories(rendering_engine PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(rendering_engine PUBLIC
+    Vulkan::Vulkan
+    glm::glm
+)
+
+# ============================================================================
+# COMPILER FLAGS
+# ============================================================================
+
+target_compile_features(rendering_engine PUBLIC cxx_std_20)
+
+if(MSVC)
+    target_compile_options(rendering_engine PRIVATE /W4 /WX)
+else()
+    target_compile_options(rendering_engine PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+# ============================================================================
+# SHADER COMPILATION (Optional)
+# ============================================================================
+
+# Find glslc compiler for shader compilation
+find_program(GLSLC glslc HINTS Vulkan::Vulkan)
+
+if(GLSLC)
+    set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
+    set(SHADER_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders_spv")
+    file(MAKE_DIRECTORY ${SHADER_OUTPUT_DIR})
+    
+    # Add custom target for shader compilation
+    add_custom_target(render_shaders ALL
+        DEPENDS ${SHADER_OUTPUT_DIR}
+    )
+    
+    # Compile common shaders
+    file(GLOB_RECURSE COMMON_SHADERS "${SHADER_DIR}/common/*.glsl")
+    foreach(SHADER ${COMMON_SHADERS})
+        add_custom_command(
+            OUTPUT "${SHADER_OUTPUT_DIR}/${shader_name}.spv"
+            COMMAND ${GLSLC} "${SHADER}" -o "${SHADER_OUTPUT_DIR}/${shader_name}.spv"
+            DEPENDS "${SHADER}"
+            COMMENT "Compiling shader ${SHADER}"
+        )
+    endforeach()
+else()
+    message(WARNING "glslc compiler not found. Shaders will not be compiled.")
+endif()
+
+# ============================================================================
+# TESTING
+# ============================================================================
+
+if(BUILD_TESTING)
+    enable_testing()
+    
+    # Add test executable
+    add_executable(test_render_pipeline_manager
+        tests/unit/rendering_engine/test_render_pipeline_manager.cpp
+    )
+    
+    target_link_libraries(test_render_pipeline_manager PRIVATE
+        rendering_engine
+        Catch2::Catch2WithMain
+    )
+    
+    add_test(NAME TestRenderPipelineManager COMMAND test_render_pipeline_manager)
+    
+    # Add more test executables as needed
+    add_executable(test_forward_plus_pipeline
+        tests/unit/rendering_engine/test_forward_plus_pipeline.cpp
+    )
+    
+    target_link_libraries(test_forward_plus_pipeline PRIVATE
+        rendering_engine
+        Catch2::Catch2WithMain
+    )
+    
+    add_test(NAME TestForwardPlusPipeline COMMAND test_forward_plus_pipeline)
+    
+    add_executable(test_deferred_pipeline
+        tests/unit/rendering_engine/test_deferred_pipeline.cpp
+    )
+    
+    target_link_libraries(test_deferred_pipeline PRIVATE
+        rendering_engine
+        Catch2::Catch2WithMain
+    )
+    
+    add_test(NAME TestDeferredPipeline COMMAND test_deferred_pipeline)
+    
+    add_executable(test_clustered_pipeline
+        tests/unit/rendering_engine/test_clustered_pipeline.cpp
+    )
+    
+    target_link_libraries(test_clustered_pipeline PRIVATE
+        rendering_engine
+        Catch2::Catch2WithMain
+    )
+    
+    add_test(NAME TestClusteredPipeline COMMAND test_clustered_pipeline)
+endif()
+
+# ============================================================================
+# EXAMPLES
+# ============================================================================
+
+if(BUILD_EXAMPLES)
+    # Forward+ Demo
+    add_executable(forward_plus_demo
+        examples/rendering_demos/forward_plus_demo/main.cpp
+    )
+    target_link_libraries(forward_plus_demo PRIVATE rendering_engine)
+    
+    # Deferred Demo
+    add_executable(deferred_demo
+        examples/rendering_demos/deferred_demo/main.cpp
+    )
+    target_link_libraries(deferred_demo PRIVATE rendering_engine)
+    
+    # Clustered Demo
+    add_executable(clustered_demo
+        examples/rendering_demos/clustered_demo/main.cpp
+    )
+    target_link_libraries(clustered_demo PRIVATE rendering_engine)
+    
+    # Lighting Demo
+    add_executable(lighting_demo
+        examples/rendering_demos/lighting_demo/main.cpp
+    )
+    target_link_libraries(lighting_demo PRIVATE rendering_engine)
+    
+    # Particle Demo
+    add_executable(particle_demo
+        examples/rendering_demos/particle_demo/main.cpp
+    )
+    target_link_libraries(particle_demo PRIVATE rendering_engine)
+endif()
+
+# ============================================================================
+# INSTALLATION
+# ============================================================================
+
+install(TARGETS rendering_engine
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY include/rendering_engine
+    DESTINATION include
+)
+
+# ============================================================================
+# SUMMARY
+# ============================================================================
+
+message(STATUS "Rendering Engine Configuration:")
+message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  Vulkan Found: ${Vulkan_FOUND}")
+message(STATUS "  GLM Found: ${glm_FOUND}")
+message(STATUS "  Shader Compiler: ${GLSLC}")

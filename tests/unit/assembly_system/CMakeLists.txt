@@ -1,0 +1,7 @@
+add_executable(test_modular_vehicle_system test_modular_vehicle_system.cpp)
+target_link_libraries(test_modular_vehicle_system PRIVATE assembly_system physics_core ecs_core Catch2::Catch2WithMain)
+add_test(NAME test_modular_vehicle_system COMMAND test_modular_vehicle_system)
+
+add_executable(test_universal_assembly_engine test_universal_assembly_engine.cpp)
+target_link_libraries(test_universal_assembly_engine PRIVATE assembly_system physics_core ecs_core Catch2::Catch2WithMain)
+add_test(NAME test_universal_assembly_engine COMMAND test_universal_assembly_engine)

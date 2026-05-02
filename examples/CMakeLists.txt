@@ -1,0 +1,8 @@
+# Examples
+
+add_subdirectory(physics_demo)
+add_subdirectory(flight_demo)
+add_subdirectory(terrain_demo)
+add_subdirectory(combat_demo)
+add_subdirectory(rendering_demos/camera_model_demo)
+add_subdirectory(ui_widgets_demo)

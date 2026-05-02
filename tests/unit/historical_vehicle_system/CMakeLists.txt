@@ -1,0 +1,3 @@
+add_executable(test_historical_vehicle_system test_historical_vehicle_system.cpp)
+target_link_libraries(test_historical_vehicle_system PRIVATE historical_vehicle_system assembly_system physics_core ecs_core Catch2::Catch2WithMain)
+add_test(NAME test_historical_vehicle_system COMMAND test_historical_vehicle_system)
