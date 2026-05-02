@@ -95,7 +95,7 @@ This is a **prototype**.
 ---
 
 
-![Status](https://img.shields.io/badge/Status-Alpha-red.svg?style=for-the-badge&logo=github) ![Version](https://img.shields.io/badge/Version-0.0.0-yellow.svg?style=for-the-badge&logo=github) ![Stage](https://img.shields.io/badge/Stage-Experimental-red.svg?style=for-the-badge) ![Patcex Studio](https://img.shields.io/badge/Patcex_Studio-Patching_Reality-pink?style=for-the-badge&logo=heart)_-
+![Status](https://img.shields.io/badge/Status-Alpha-red.svg?style=for-the-badge&logo=github) ![Version](https://img.shields.io/badge/Version-0.0.0-yellow.svg?style=for-the-badge&logo=github) ![Stage](https://img.shields.io/badge/Stage-Experimental-red.svg?style=for-the-badge) ![Patcex Studio](https://img.shields.io/badge/Patcex_Studio-Patching_Reality-pink?style=for-the-badge&logo=heart)
 
 ---
 
