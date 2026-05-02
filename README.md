@@ -2,9 +2,15 @@
 > **Bugs are features in motion.** 🦘💨
 
 ![License](https://img.shields.io/badge/License-AGPL_v3-blue.svg)
-![Status](https://img.shields.io/badge/Status-Prototype_Chaos-orange.svg)
-![SIMD](https://img.shields.io/badge/Optimization-AVX2_SIMD-green.svg)
-![Bugs](https://img.shields.io/badge/Bugs-Multiplying-red.svg)
+![Research](https://img.shields.io/badge/For-Research%20%26%20Learning-purple)
+![Build](https://img.shields.io/badge/Build-CMake%20%7C%20C++20-success)
+![Examples](https://img.shields.io/badge/Examples-Combat%20%7C%20Flight%20%7C%20Terrain-blue)
+![SIMD](https://img.shields.io/badge/SIMD-AVX2-brightgreen)
+![Documentation](https://img.shields.io/badge/Docs-goodluck-lightgrey)
+![Status](https://img.shields.io/badge/Status-Experimental-orange)
+![Stability](https://img.shields.io/badge/Stability-Unstable-yellow)
+![Bugs](https://img.shields.io/badge/Bugs-Welcome!-ff69b4)
+![Contributions](https://img.shields.io/badge/Contributions-Welcome-brightgreen)
 
 **BUGINE** is a high-performance physics prototype where bugs multiply like bunnies. Built on **C++20**, it's fast enough to crash before you see the glitch. 
 
@@ -21,6 +27,7 @@
 | **6DOF Flight** | ⚠️ **WIP** | Quaternion integration. Sometimes flies upside down. |
 | **GJK/EPA Solver** | 🐛 **Buggy** | Precise penetration depth. Sometimes penetrates reality. |
 | **Community** | ❤️ **Alive** | Bugs = Growth. We eat what others throw away. |
+
 
 ---
 
@@ -83,6 +90,18 @@ This is a **prototype**.
 
 <img width="1536" height="1024" alt="2b2d82f3-f839-400f-bac4-d4b07e1b23f8" src="https://github.com/user-attachments/assets/76c21d2d-82ef-444c-a3cd-13bf42222370" />
 
+---
+
+![BUGINE](https://img.shields.io/badge/BUGINE-Bunny's%20Unstable%20Gravity%20&%20Interaction%20Numerical%20Engine-ff69b4?style=for-the-badge&logo=rabbitmq)
+![Status](https://img.shields.io/badge/Status-Alpha-red.svg?style=for-the-badge&logo=github) ![Version](https://img.shields.io/badge/Version-0.0.0-yellow.svg?style=for-the-badge&logo=github) ![Stage](https://img.shields.io/badge/Stage-Experimental-red.svg?style=for-the-badge) ![Patcex Studio](https://img.shields.io/badge/Patcex_Studio-Patching_Reality-pink?style=for-the-badge&logo=heart)_-
+
+---
+
+### Status:
+[![Stars](https://img.shields.io/github/stars/Patcex-studio/BUGINE?style=for-the-badge&logo=github)](https://github.com/Patcex-studio/BUGINE/stargazers)
+[![Forks](https://img.shields.io/github/forks/Patcex-studio/BUGINE?style=for-the-badge&logo=github)](https://github.com/Patcex-studio/BUGINE/forks)
+[![Issues](https://img.shields.io/github/issues/Patcex-studio/BUGINE?style=for-the-badge&logo=github)](https://github.com/Patcex-studio/BUGINE/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/Patcex-studio/BUGINE?style=for-the-badge&logo=git)](https://github.com/Patcex-studio/BUGINE/commits/master)
 
 ---
 <div align="center">
