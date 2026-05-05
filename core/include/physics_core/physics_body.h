@@ -43,11 +43,8 @@ struct alignas(32) PhysicsBody {
     Vec3 velocity;          // Linear velocity
     Vec3 acceleration;      // Linear acceleration
     Vec3 angular_velocity;  // Rotational velocity
-<<<<<<< HEAD
-=======
     Vec3 angular_acceleration; // Rotational acceleration
     Vec3 torque;            // Accumulated torque for this frame
->>>>>>> c308d63 (Helped the rabbits find a home)
     
     // Dynamics
     float mass;             // Positive mass (kg)

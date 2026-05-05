@@ -26,8 +26,6 @@ else()
     message(WARNING "Physics core unit test source test_constraint_softbody.cpp not found; skipping target.")
 endif()
 
-<<<<<<< HEAD
-=======
 if(EXISTS ${CORE_TEST_SOURCE_DIR}/test_ballistics_formulas.cpp)
     add_executable(test_ballistics_formulas ${CORE_TEST_SOURCE_DIR}/test_ballistics_formulas.cpp)
     target_link_libraries(test_ballistics_formulas PRIVATE physics_core gtest_main)
@@ -60,6 +58,5 @@ else()
     message(WARNING "Physics core unit test source test_ccd.cpp not found; skipping target.")
 endif()
 
->>>>>>> c308d63 (Helped the rabbits find a home)
 # Add more test executables as needed
 # TODO: Add all physics core unit tests

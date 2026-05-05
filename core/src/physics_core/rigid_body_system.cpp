@@ -95,8 +95,6 @@ void RigidBodySystem::apply_impulse(EntityID id, const Vec3& impulse, const Vec3
     body->velocity = body->velocity + impulse * body->inv_mass;
 }
 
-<<<<<<< HEAD
-=======
 void RigidBodySystem::apply_torque(EntityID id, const Vec3& torque) {
     size_t index = bodies_.get_index(id);
     if (index == SIZE_MAX || index >= torque_x_.size()) {
@@ -108,7 +106,6 @@ void RigidBodySystem::apply_torque(EntityID id, const Vec3& torque) {
     torque_z_[index] += static_cast<float>(torque.z);
 }
 
->>>>>>> c308d63 (Helped the rabbits find a home)
 void RigidBodySystem::set_gravity(const Vec3& gravity) {
     gravity_ = gravity;
 }
@@ -208,8 +205,6 @@ void RigidBodySystem::update_forces_and_torques(float dt) {
         force_y_[i] = 0.0f;
         force_z_[i] = 0.0f;
     }
-<<<<<<< HEAD
-=======
 
     // Apply accumulated torques and update angular state
     for (size_t j = 0; j < count; ++j) {
@@ -244,7 +239,6 @@ void RigidBodySystem::update_forces_and_torques(float dt) {
         torque_y_[j] = 0.0f;
         torque_z_[j] = 0.0f;
     }
->>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 }  // namespace physics_core

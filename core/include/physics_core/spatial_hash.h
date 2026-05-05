@@ -105,8 +105,6 @@ private:
     void find_overlapping_blocks(float x, float y, float z, float radius, std::vector<uint32_t>& block_indices) const;
 };
 
-<<<<<<< HEAD
-=======
 template<typename Func>
 void HierarchicalGrid::query_radius(float x, float y, float z, float radius, Func&& callback) const {
     std::vector<uint32_t> overlapping_blocks;
@@ -126,5 +124,4 @@ void HierarchicalGrid::query_radius(float x, float y, float z, float radius, Fun
     }
 }
 
->>>>>>> c308d63 (Helped the rabbits find a home)
 } // namespace physics_core

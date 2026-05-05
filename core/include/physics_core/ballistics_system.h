@@ -20,10 +20,7 @@
 
 #include <vector>
 #include <cmath>
-<<<<<<< HEAD
-=======
 #include <immintrin.h>
->>>>>>> c308d63 (Helped the rabbits find a home)
 #include "projectile_properties.h"
 #include "vehicle_component.h"
 #include "armor_materials.h"
@@ -48,7 +45,6 @@ struct ImpactParameters {
     float standoff_distance;                   // For HEAT projectiles (mm)
     
     // Position data
-<<<<<<< HEAD
     __m256 impact_position;                    // Impact position (world space)
     __m256 impact_normal;                      // Surface normal at impact
     __m256 impact_velocity_vector;             // Velocity vector at impact
@@ -61,7 +57,6 @@ struct ImpactParameters {
     float temperature_celsius;                 // Ambient temperature
     float humidity_percent;                    // Humidity percentage
     float air_pressure_pa;                     // Air pressure
-=======
     __m256 impact_position;                    // Impact position (m, world space)
     __m256 impact_normal;                      // Surface normal (unit vector)
     __m256 impact_velocity_vector;             // Velocity vector at impact (m/s)
@@ -74,22 +69,18 @@ struct ImpactParameters {
     float temperature_celsius;                 // Ambient temperature (°C)
     float humidity_percent;                    // Humidity percentage (%)
     float air_pressure_pa;                     // Air pressure (Pa)
->>>>>>> c308d63 (Helped the rabbits find a home)
 };
 
 // Penetration result (old interface maintained)
 struct PenetrationResult {
     bool penetrated;                           // Whether armor was penetrated
     float penetration_depth;                   // How deep it penetrated (mm)
-<<<<<<< HEAD
     float residual_energy;                     // Remaining kinetic energy (joules)
     float ricochet_probability;                // Chance of ricochet (0.0-1.0)
     float spall_damage;                        // Secondary spalling damage
-=======
     float residual_energy;                     // Remaining kinetic energy (J)
     float ricochet_probability;                // Chance of ricochet (0.0-1.0)
     float spall_damage;                        // Secondary spalling damage (J)
->>>>>>> c308d63 (Helped the rabbits find a home)
     float exit_angle;                          // Angle of exit if penetrated (degrees)
 };
 
@@ -99,13 +90,10 @@ struct ImpactData {
     float impact_velocity;                     // Velocity at impact (m/s)
     float distance_traveled;                   // Distance projectile traveled (m)
     float standoff_distance;                   // For HEAT projectiles (mm)
-<<<<<<< HEAD
     __m128 impact_position;                    // Impact position (x,y,z)
     __m128 impact_normal;                      // Surface normal at impact
-=======
     __m128 impact_position;                    // Impact position (m, x,y,z)
     __m128 impact_normal;                      // Surface normal (unit vector)
->>>>>>> c308d63 (Helped the rabbits find a home)
 };
 
 // ============================================================================
@@ -189,7 +177,6 @@ public:
         float explosive_mass, float armor_thickness, const ArmorMaterial& material
     );
 
-<<<<<<< HEAD
     // Kinetic penetration (generic armor-piercing)
     static bool simulate_kinetic_penetration(
         const ProjectileCharacteristics& projectile,
@@ -208,8 +195,6 @@ public:
         BallisticImpactResult& result
     );
 
-=======
->>>>>>> c308d63 (Helped the rabbits find a home)
     // ========================================================================
     // RICOCHET AND ANGLE EFFECTS
     // ========================================================================
@@ -223,15 +208,12 @@ public:
         float& ricochet_velocity_ms
     );
     
-<<<<<<< HEAD
     // Calculate critical ricochet angle
     static float calculate_ricochet_angle(
         const ArmorCharacteristics& armor,
         float impact_angle_deg
     );
     
-=======
->>>>>>> c308d63 (Helped the rabbits find a home)
     // ========================================================================
     // SPALLING AND SECONDARY EFFECTS
     // ========================================================================
@@ -243,7 +225,6 @@ public:
         std::vector<Fragment>& spall_fragments
     );
     
-<<<<<<< HEAD
     // Calculate behind-armor effects
     static void calculate_behind_armor_effects(
         const ArmorCharacteristics& armor,
@@ -251,13 +232,10 @@ public:
         std::vector<Fragment>& effects
     );
     
-=======
->>>>>>> c308d63 (Helped the rabbits find a home)
     // ========================================================================
     // ARMOR INTERACTION
     // ========================================================================
     
-<<<<<<< HEAD
     // Handle reactive armor (ERA) activation
     static bool calculate_era_activation(
         const ArmorCharacteristics& armor,
@@ -273,8 +251,6 @@ public:
         BallisticImpactResult& result
     );
     
-=======
->>>>>>> c308d63 (Helped the rabbits find a home)
     // ========================================================================
     // SIMD BATCH PROCESSING (8 impacts per batch)
     // ========================================================================
@@ -296,7 +272,6 @@ public:
     );
     
     // ========================================================================
-<<<<<<< HEAD
     // PHYSICS CALCULATIONS
     // ========================================================================
     
@@ -320,8 +295,6 @@ public:
     );
     
     // ========================================================================
-=======
->>>>>>> c308d63 (Helped the rabbits find a home)
     // PERFORMANCE TESTING AND VALIDATION
     // ========================================================================
     
@@ -332,7 +305,6 @@ public:
     // PRIVATE SIMD BATCH PROCESSING FUNCTIONS
     // ========================================================================
     
-<<<<<<< HEAD
     // APFSDS batch processing
     static void calculate_penetration_batch_apfsds(
         __m256 velocities, __m256 angles, __m256 thicknesses, 
@@ -351,7 +323,6 @@ public:
     static void calculate_penetration_batch_hesh(
         __m256 velocities, __m256 angles, __m256 thicknesses,
         __m256 material_factors, __m256 masses, __m256 densities,
-=======
     // APFSDS batch processing (uses parametrized projectile data)
     static void calculate_penetration_batch_apfsds(
         __m256 velocity, __m256 angle, __m256 armor, __m256 hardness, __m256 spall_coeff, __m256 mask,
@@ -370,7 +341,6 @@ public:
     static void calculate_penetration_batch_hesh(
         __m256 velocity, __m256 angle, __m256 armor, __m256 hardness, __m256 spall_coeff, __m256 mask,
         __m256 explosive_mass,
->>>>>>> c308d63 (Helped the rabbits find a home)
         float* penetrated_mask, float* depth, float* residual_energy
     );
 
@@ -396,7 +366,6 @@ private:
         float penetration_depth_mm,
         const ArmorMaterial& material
     );
-<<<<<<< HEAD
     
     // Calculate penetration capability using De Marre formula
     static float calculate_de_marre_penetration(
@@ -407,10 +376,8 @@ private:
     );
     
     // Calculate normalized penetration depth
-=======
 
     // Normalize penetration using a generalized De Marre form
->>>>>>> c308d63 (Helped the rabbits find a home)
     static float calculate_normalized_penetration(
         float ap_constant,
         float projectile_mass_kg,
@@ -419,8 +386,6 @@ private:
         float effective_armor_thickness,
         float armor_hardness
     );
-<<<<<<< HEAD
-=======
 
     // Determine ricochet-critical impact angle
     static float calculate_ricochet_angle(
@@ -505,7 +470,6 @@ private:
         float projectile_diameter_mm,
         float armor_hardness_factor
     );
->>>>>>> c308d63 (Helped the rabbits find a home)
     
     // Calculate HEAT jet penetration depth
     static float calculate_heat_jet_penetration(
@@ -527,7 +491,6 @@ private:
         float penetration_depth_mm,
         float impact_energy_joules
     );
-<<<<<<< HEAD
     
     // Calculate fragment velocities
     static void calculate_fragment_velocities(
@@ -557,8 +520,6 @@ private:
         const ImpactParameters& impact,
         const ArmorCharacteristics& armor
     );
-=======
->>>>>>> c308d63 (Helped the rabbits find a home)
 
     // Multi-layered armor penetration calculation
     static float calculate_penetration_depth(

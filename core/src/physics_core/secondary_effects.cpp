@@ -23,10 +23,7 @@
 #include "physics_core/damage_system.h"
 #include <algorithm>
 #include <cmath>
-<<<<<<< HEAD
-=======
 #include <immintrin.h>
->>>>>>> c308d63 (Helped the rabbits find a home)
 #include <random>
 
 namespace physics_core {
@@ -648,11 +645,9 @@ void CascadingDamageSystem::process_secondary_effects_cascade(
     std::vector<DamageEvent>& cascade_events
 ) {
     for (const auto& comp : components) {
-<<<<<<< HEAD
         float distance_x = comp.damage_position[0] - explosion.explosion_center[0];
         float distance_y = comp.damage_position[1] - explosion.explosion_center[1];
         float distance_z = comp.damage_position[2] - explosion.explosion_center[2];
-=======
         alignas(32) float comp_pos[8];
         alignas(32) float explosion_center[8];
         _mm256_store_ps(comp_pos, comp.damage_position);
@@ -661,7 +656,6 @@ void CascadingDamageSystem::process_secondary_effects_cascade(
         float distance_x = comp_pos[0] - explosion_center[0];
         float distance_y = comp_pos[1] - explosion_center[1];
         float distance_z = comp_pos[2] - explosion_center[2];
->>>>>>> c308d63 (Helped the rabbits find a home)
         float distance = std::sqrt(distance_x*distance_x + distance_y*distance_y + distance_z*distance_z);
         
         if (distance > explosion.explosion_radius_m) continue;

@@ -116,10 +116,8 @@ bool RepairSystem::start_repair_operation(const RepairOperation& operation) {
     repair_state->required_parts = operation.required_parts;
     repair_state->required_tools = operation.required_tools;
     
-<<<<<<< HEAD
     // Check tools availability (simplified - would check ToolInventory of repair unit)
     repair_state->has_required_tools = true; // Assume tools are available for now
-=======
     // Check tools availability - verify repair unit has all required tools
     repair_state->has_required_tools = true;  // Optimistic start
     
@@ -148,7 +146,6 @@ bool RepairSystem::start_repair_operation(const RepairOperation& operation) {
             break;
         }
     }
->>>>>>> c308d63 (Helped the rabbits find a home)
     
     if (!repair_state->has_required_parts || !repair_state->has_required_tools) {
         return false; // Cannot start repair without parts/tools

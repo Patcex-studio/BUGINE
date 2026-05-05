@@ -18,10 +18,7 @@
 */
 #include "physics_core/terrain_system.h"
 #include "physics_core/physics_thread_pool.h"
-<<<<<<< HEAD
-=======
 #include "physics_core/simd_config.h"
->>>>>>> c308d63 (Helped the rabbits find a home)
 #include <cmath>
 #include <cstring>
 #include <immintrin.h>
@@ -352,16 +349,12 @@ void TerrainSystem::query_height_simd(
 ) const {
     const float inv_tile_scalar = 1.0f / tile_size_;
 
-<<<<<<< HEAD
-=======
     // Process 8 queries at a time using SIMD
->>>>>>> c308d63 (Helped the rabbits find a home)
     size_t i = 0;
     for (; i + 8 <= count; i += 8) {
         __m256 world_x = _mm256_loadu_ps(positions_x + i);
         __m256 world_y = _mm256_loadu_ps(positions_y + i);
 
-<<<<<<< HEAD
         alignas(32) float x_buffer[8];
         alignas(32) float y_buffer[8];
         alignas(32) float local_x[8];
@@ -384,7 +377,6 @@ void TerrainSystem::query_height_simd(
         }
     }
 
-=======
         // Store to find tiles (tile lookup is not SIMD-friendly due to hash map)
         alignas(32) float x_buffer[8];
         alignas(32) float y_buffer[8];
@@ -427,7 +419,6 @@ void TerrainSystem::query_height_simd(
     }
 
     // Process remaining queries (< 8)
->>>>>>> c308d63 (Helped the rabbits find a home)
     for (; i < count; ++i) {
         const TerrainTile* tile = find_tile_for_world(positions_x[i], positions_y[i]);
         if (!tile) {

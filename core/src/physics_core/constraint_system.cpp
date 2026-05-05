@@ -18,10 +18,7 @@
 */
 #include "physics_core/constraint_system.h"
 #include "physics_core/matter_systems.h"
-<<<<<<< HEAD
-=======
 #include "physics_core/simd_config.h"
->>>>>>> c308d63 (Helped the rabbits find a home)
 #include <cmath>
 
 namespace physics_core {
@@ -227,7 +224,6 @@ void ConstraintSolver::solve_batch(size_t start, size_t count, float dt, RigidBo
 
 #ifdef __AVX2__
 void ConstraintSolver::solve_batch_simd(size_t start, size_t count, float dt, RigidBodySystem& rigid_body_system) {
-<<<<<<< HEAD
     // Load constraint data into SIMD registers
     __m256 target_dist = _mm256_load_ps(&target_distance_[start]);
     __m256 compliance = _mm256_load_ps(&compliance_[start]);
@@ -284,7 +280,6 @@ void ConstraintSolver::solve_batch_simd(size_t start, size_t count, float dt, Ri
         
         if (type_[idx] == ConstraintType::HINGE) {
             enforce_hinge(bodyA, bodyB, idx);
-=======
     // Fetch bodies - we can't avoid individual lookups, but we vectorize the math
     alignas(32) PhysicsBody* bodies_a[BATCH_SIZE];
     alignas(32) PhysicsBody* bodies_b[BATCH_SIZE];
@@ -414,7 +409,6 @@ void ConstraintSolver::solve_batch_simd(size_t start, size_t count, float dt, Ri
         
         if (type_[idx] == ConstraintType::HINGE) {
             enforce_hinge(bodies_a[i], bodies_b[i], idx);
->>>>>>> c308d63 (Helped the rabbits find a home)
         }
     }
 }

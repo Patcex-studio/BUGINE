@@ -171,8 +171,6 @@ struct Mat3x3 {
         }
         return result;
     }
-<<<<<<< HEAD
-=======
 
     Mat3x3 operator+(const Mat3x3& m) const {
         Mat3x3 result;
@@ -183,7 +181,6 @@ struct Mat3x3 {
         }
         return result;
     }
->>>>>>> c308d63 (Helped the rabbits find a home)
 };
 
 // 4x4 Homogeneous transformation matrix

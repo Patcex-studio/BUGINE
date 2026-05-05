@@ -192,15 +192,12 @@ public:
      */
     const ThermalParticleSoA& get_thermal_particles() const { return thermal_particles_; }
     
-<<<<<<< HEAD
-=======
     /**
      * Update SPH fluid properties based on thermal effects
      * Applied after heat transfer and phase transitions to influence viscosity/density
      */
     void update_thermal_properties();
     
->>>>>>> c308d63 (Helped the rabbits find a home)
 private:
     SPHSystem* sph_system_;
     ThermalParticleSoA thermal_particles_;

@@ -129,7 +129,6 @@ void HybridPrecisionSystem::apply_pending_shift() {
     uint64_t active_ver = active_origin_.version.load(std::memory_order_relaxed);
     
     if (pending_ver != active_ver) {
-<<<<<<< HEAD
         // Копируем origin
         active_origin_.origin = pending_origin_.origin;
         // Атомарно обновляем версию
@@ -137,7 +136,6 @@ void HybridPrecisionSystem::apply_pending_shift() {
         
         // Здесь можно добавить двойную буферизацию локальных координат
         // Для простоты пропустим
-=======
         // Store old origin for offset calculation
         Vec3 old_origin = active_origin_.origin;
         
@@ -176,7 +174,6 @@ void HybridPrecisionSystem::apply_pending_shift() {
         }
         
         total_syncs_++;
->>>>>>> c308d63 (Helped the rabbits find a home)
     }
 }
 

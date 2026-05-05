@@ -20,10 +20,7 @@
 #include <immintrin.h>
 #include <algorithm>
 #include <cmath>
-<<<<<<< HEAD
-=======
 #include <unordered_map>
->>>>>>> c308d63 (Helped the rabbits find a home)
 
 namespace physics_core {
 
@@ -97,12 +94,9 @@ void ThermalSystem::update(float dt)
     // Main thermal computations
     compute_heat_transfer_simd(dt);
     process_phase_transitions();
-<<<<<<< HEAD
-=======
     
     // Update SPH fluid properties based on new temperatures
     update_thermal_properties();
->>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 void ThermalSystem::add_thermal_energy(uint32_t particle_idx, float energy, float mass)
@@ -262,8 +256,6 @@ void ThermalSystem::process_phase_transitions()
     }
 }
 
-<<<<<<< HEAD
-=======
 void ThermalSystem::update_thermal_properties()
 {
     if (!sph_system_) return;
@@ -322,7 +314,6 @@ void ThermalSystem::update_thermal_properties()
     }
 }
 
->>>>>>> c308d63 (Helped the rabbits find a home)
 void ThermalSystem::transition_particle(uint32_t idx, PhaseState new_phase)
 {
     if (idx >= thermal_particles_.count) return;

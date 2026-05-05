@@ -25,10 +25,7 @@
 #include <unordered_map>
 
 namespace physics_core {
-<<<<<<< HEAD
-=======
 class PhysicsCore;
->>>>>>> c308d63 (Helped the rabbits find a home)
 
 // ============================================================================
 // SPH Boundary Particles (for Fluid-Solid Coupling)
@@ -164,14 +161,11 @@ public:
      * Get accumulated forces for a body and reset buffer
      */
     Vec3 get_and_clear_body_force(uint32_t body_id);
-<<<<<<< HEAD
-=======
 
     /**
      * Apply accumulated boundary body forces to the physics core
      */
     void apply_accumulated_body_forces(PhysicsCore& physics);
->>>>>>> c308d63 (Helped the rabbits find a home)
     
     /**
      * Get accumulated impulses for a body and reset buffer

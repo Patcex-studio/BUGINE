@@ -18,10 +18,7 @@
 */
 #include "physics_core/sph_system.h"
 #include "physics_core/sph_boundary_system.h"
-<<<<<<< HEAD
-=======
 #include "physics_core/physics_core.h"
->>>>>>> c308d63 (Helped the rabbits find a home)
 #include "physics_core/thermal_system.h"
 #include <algorithm>
 #include <unordered_map>
@@ -761,24 +758,18 @@ void SPHSystem::compute_boundary_forces_simd(SPHBoundarySystem* boundary_system)
                 fy += mag * dy;
                 fz += mag * dz;
                 
-<<<<<<< HEAD
                 // Force is applied to fluid
-=======
                 // Force is applied to fluid particle
->>>>>>> c308d63 (Helped the rabbits find a home)
                 acc_x_[i] += fx / mass_[i];
                 acc_y_[i] += fy / mass_[i];
                 acc_z_[i] += fz / mass_[i];
                 
-<<<<<<< HEAD
                 // Opposite force applied to rigid body (accumulated in boundary system)
                 // This is handled externally after computing forces
-=======
                 // Opposite force applied to rigid body via boundary particles
                 // Accumulate in boundary system for later application
                 Vec3 reaction_force(-fx, -fy, -fz);
                 boundary_system->add_particle_force(j, reaction_force);
->>>>>>> c308d63 (Helped the rabbits find a home)
             }
         }
     }

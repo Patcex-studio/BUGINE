@@ -115,7 +115,6 @@ void DEMParticleSoA::allocate_aligned(size_t new_capacity) {
     deallocate_aligned();
     capacity = new_capacity;
     
-<<<<<<< HEAD
     // Allocate 18 float arrays (3 components × 6 vector fields)
     pos_x = static_cast<float*>(std::aligned_alloc(ALIGNMENT, capacity * sizeof(float)));
     pos_y = static_cast<float*>(std::aligned_alloc(ALIGNMENT, capacity * sizeof(float)));
@@ -140,7 +139,6 @@ void DEMParticleSoA::allocate_aligned(size_t new_capacity) {
     radius = static_cast<float*>(std::aligned_alloc(ALIGNMENT, capacity * sizeof(float)));
     inv_mass = static_cast<float*>(std::aligned_alloc(ALIGNMENT, capacity * sizeof(float)));
     shear_modulus = static_cast<float*>(std::aligned_alloc(ALIGNMENT, capacity * sizeof(float)));
-=======
     size_t size = capacity * sizeof(float);
     size_t aligned_size = (size + ALIGNMENT - 1) & ~(ALIGNMENT - 1);
     
@@ -168,7 +166,6 @@ void DEMParticleSoA::allocate_aligned(size_t new_capacity) {
     radius = static_cast<float*>(std::aligned_alloc(ALIGNMENT, aligned_size));
     inv_mass = static_cast<float*>(std::aligned_alloc(ALIGNMENT, aligned_size));
     shear_modulus = static_cast<float*>(std::aligned_alloc(ALIGNMENT, aligned_size));
->>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 void DEMParticleSoA::deallocate_aligned() {
@@ -367,11 +364,8 @@ void DEMSystem::compute_contact_forces_simd() {
                     Vec3 vel_i(particles_soa_.vel_x[i], particles_soa_.vel_y[i], particles_soa_.vel_z[i]);
                     Vec3 vel_j(particles_soa_.vel_x[j], particles_soa_.vel_y[j], particles_soa_.vel_z[j]);
                     Vec3 rel_vel = vel_j - vel_i;
-<<<<<<< HEAD
                     float rel_speed = rel_vel.length();
-=======
                     float rel_speed = rel_vel.magnitude();
->>>>>>> c308d63 (Helped the rabbits find a home)
                     Vec3 ft = Vec3(0.0f, 0.0f, 0.0f);
                     if (rel_speed > 1e-6f) {
                         float ft_max = friction_coeff_ * fn_mag;
@@ -408,11 +402,8 @@ void DEMSystem::integrate_particles_simd(float dt) {
         float inv_mass = particles_soa_.inv_mass[i];
         if (inv_mass <= 0.0f) continue;
 
-<<<<<<< HEAD
         particles_soa_.force_y[i] -= gravity / inv_mass;
-=======
         particles_soa_.force_y[i] -= gravity;
->>>>>>> c308d63 (Helped the rabbits find a home)
 
         particles_soa_.vel_x[i] += particles_soa_.force_x[i] * inv_mass * dt;
         particles_soa_.vel_y[i] += particles_soa_.force_y[i] * inv_mass * dt;

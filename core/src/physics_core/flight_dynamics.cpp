@@ -750,8 +750,6 @@ void FlightDynamicsSystem::apply_flight_forces_to_physics(
     Vec3 aero_force(aerodynamics.force_x, aerodynamics.force_y, aerodynamics.force_z);
     physics.apply_force(aircraft_entity, aero_force);
 
-<<<<<<< HEAD
-=======
     Vec3 aero_torque(
         aerodynamics.moment_roll,
         aerodynamics.moment_pitch,
@@ -759,13 +757,11 @@ void FlightDynamicsSystem::apply_flight_forces_to_physics(
     );
     physics.apply_torque(aircraft_entity, aero_torque);
 
->>>>>>> c308d63 (Helped the rabbits find a home)
     // Propulsion thrust acts along the forward X-axis of the aircraft in body space.
     // Here we simplify and apply it directly in world space along the X-axis.
     Vec3 prop_force(propulsion.thrust, 0.0f, 0.0f);
     physics.apply_force(aircraft_entity, prop_force);
 
-<<<<<<< HEAD
     // Apply weight separately so PhysicsCore can integrate gravity consistently.
     Vec3 weight_force(0.0f, 0.0f, -state.mass_kg * GRAVITY_MS2);
     physics.apply_force(aircraft_entity, weight_force);
@@ -773,7 +769,6 @@ void FlightDynamicsSystem::apply_flight_forces_to_physics(
     // Aerodynamic torques are not directly supported in PhysicsCore yet.
     // We can approximate them via impulses at offset points if needed.
     // For now only forces are applied to ensure the aircraft interacts with the physics system.
-=======
     Vec3 prop_torque(
         propulsion.roll_moment,
         propulsion.pitch_moment,
@@ -784,7 +779,6 @@ void FlightDynamicsSystem::apply_flight_forces_to_physics(
     // Apply weight separately so PhysicsCore can integrate gravity consistently.
     Vec3 weight_force(0.0f, 0.0f, -state.mass_kg * GRAVITY_MS2);
     physics.apply_force(aircraft_entity, weight_force);
->>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 void FlightDynamicsSystem::initialize_from_modular_aircraft(
@@ -893,11 +887,9 @@ void FlightDynamicsSystem::simulate_rotor_blade_flapping(
     float collective,
     float cyclic
 ) {
-<<<<<<< HEAD
     float flapping_angle = (collective + cyclic * 0.5f) * 0.08f;
     float coning_effect = std::min(0.25f, std::abs(flapping_angle));
     (void)coning_effect;
-=======
     // Blade flapping dynamics for helicopters
     // Flapping occurs due to differential lift across the rotor disk
     
@@ -925,7 +917,6 @@ void FlightDynamicsSystem::simulate_rotor_blade_flapping(
     (void)lateral_flapping;
     (void)longitudinal_flapping;
     (void)flapping_rate_damping;
->>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 void FlightDynamicsSystem::apply_ground_effect(float altitude_m, float& lift_coefficient) {
@@ -951,14 +942,12 @@ void FlightDynamicsSystem::apply_ground_effect(float altitude_m, float& lift_coe
     }
 }
 
-<<<<<<< HEAD
 void FlightDynamicsSystem::model_vortex_ring_state(
     float descent_rate
 ) {
     if (descent_rate < -5.0f) {
         float vortex_loss = std::min(0.7f, (-descent_rate - 5.0f) * 0.05f);
         (void)vortex_loss;
-=======
 void FlightDynamicsSystem::calculate_ground_effect(float altitude) {
     // Ground effect for helicopters
     // Effect diminishes with altitude above ground
@@ -1023,7 +1012,6 @@ void FlightDynamicsSystem::model_vortex_ring_state(
         
         (void)rotor_effectiveness_loss;
         (void)vibration_increase;
->>>>>>> c308d63 (Helped the rabbits find a home)
     }
 }
 
@@ -1070,7 +1058,6 @@ float FlightDynamicsSystem::compute_induced_velocity(float thrust, float disk_ar
 }
 
 void FlightDynamicsSystem::model_vortex_ring_state(HelicopterState& heli, float descent_rate, float horiz_speed) {
-<<<<<<< HEAD
     // Vortex Ring State conditions: descent > 5 m/s, horizontal speed < 10 m/s
     if (descent_rate > 5.0f && horiz_speed < 10.0f) {
         heli.vortex_ring_state = true;
@@ -1082,7 +1069,6 @@ void FlightDynamicsSystem::model_vortex_ring_state(HelicopterState& heli, float 
         heli.vortex_ring_state = false;
         // Dampen vibrations
         heli.vibration_level *= 0.95f;
-=======
     // Vortex Ring State detection and simulation for helicopter dynamics
     // VRS conditions: steep descent (>5 m/s) + low horizontal speed (<10 m/s)
     // This is a dangerous condition where rotor enters its own wake
@@ -1122,7 +1108,6 @@ void FlightDynamicsSystem::model_vortex_ring_state(HelicopterState& heli, float 
         
         // Restore control authority
         heli.control_authority_loss = 0.0f;
->>>>>>> c308d63 (Helped the rabbits find a home)
     }
 }
 

@@ -18,10 +18,7 @@
 */
 #include "physics_core/ballistics_system.h"
 #include "physics_core/damage_system.h"
-<<<<<<< HEAD
-=======
 #include "physics_core/simd_config.h"
->>>>>>> c308d63 (Helped the rabbits find a home)
 #include <cmath>
 #include <algorithm>
 #include <cstring>
@@ -88,8 +85,6 @@ PenetrationResult BallisticsSystem::calculate_penetration(
     return result;
 }
 
-<<<<<<< HEAD
-=======
 bool BallisticsSystem::calculate_penetration(
     const ProjectileCharacteristics& projectile,
     const ArmorCharacteristics& armor,
@@ -317,7 +312,6 @@ void BallisticsSystem::process_ballistic_impacts_batch(
     }
 }
 
->>>>>>> c308d63 (Helped the rabbits find a home)
 PenetrationResult BallisticsSystem::simulate_apfsds_penetration(
     float velocity, float angle, float armor_thickness, const ArmorMaterial& material
 ) {
@@ -403,9 +397,7 @@ void BallisticsSystem::calculate_penetration_batch(
     alignas(32) float armor_thickness[8];
     alignas(32) float hardness[8];
     alignas(32) float spall_coeff[8];
-<<<<<<< HEAD
     alignas(32) float projectile_type[8]; // 0=APFSDS, 1=HEAT, 2=HESH, 3=other
-=======
     alignas(32) float projectile_type[8];
     // New: projectile-specific parameters
     alignas(32) float proj_mass[8];
@@ -413,7 +405,6 @@ void BallisticsSystem::calculate_penetration_batch(
     alignas(32) float proj_length[8];
     alignas(32) float proj_charge_diam[8];
     alignas(32) float proj_explosive_mass[8];
->>>>>>> c308d63 (Helped the rabbits find a home)
 
     for (size_t i = 0; i < projectiles.size(); i += batch_size) {
         size_t current_batch = std::min(batch_size, projectiles.size() - i);
@@ -430,11 +421,9 @@ void BallisticsSystem::calculate_penetration_batch(
             hardness[j] = mat.hardness_rha;
             spall_coeff[j] = mat.spall_coefficient;
             projectile_type[j] = static_cast<float>(projectiles[idx].projectile_type);
-<<<<<<< HEAD
         }
 
         // Fill remaining slots with defaults for SIMD processing
-=======
             
             // Extract projectile parameters
             proj_mass[j] = projectiles[idx].mass;
@@ -445,7 +434,6 @@ void BallisticsSystem::calculate_penetration_batch(
         }
 
         // Fill remaining slots with realistic defaults for SIMD processing
->>>>>>> c308d63 (Helped the rabbits find a home)
         for (size_t j = current_batch; j < batch_size; ++j) {
             velocity[j] = 0.0f;
             angle[j] = 0.0f;
@@ -453,14 +441,11 @@ void BallisticsSystem::calculate_penetration_batch(
             hardness[j] = 2400.0f;
             spall_coeff[j] = 0.5f;
             projectile_type[j] = 0.0f;
-<<<<<<< HEAD
-=======
             proj_mass[j] = 4.0f;
             proj_caliber[j] = 120.0f;
             proj_length[j] = 600.0f;
             proj_charge_diam[j] = 100.0f;
             proj_explosive_mass[j] = 1.5f;
->>>>>>> c308d63 (Helped the rabbits find a home)
         }
 
         // Load into AVX2 registers
@@ -470,21 +455,17 @@ void BallisticsSystem::calculate_penetration_batch(
         __m256 hard_v = _mm256_load_ps(hardness);
         __m256 spall_v = _mm256_load_ps(spall_coeff);
         __m256 type_v = _mm256_load_ps(projectile_type);
-<<<<<<< HEAD
-=======
         __m256 mass_v = _mm256_load_ps(proj_mass);
         __m256 cal_v = _mm256_load_ps(proj_caliber);
         __m256 len_v = _mm256_load_ps(proj_length);
         __m256 charge_v = _mm256_load_ps(proj_charge_diam);
         __m256 exp_v = _mm256_load_ps(proj_explosive_mass);
->>>>>>> c308d63 (Helped the rabbits find a home)
 
         // Output arrays
         alignas(32) float penetrated_mask[8];
         alignas(32) float depth[8];
         alignas(32) float residual_energy[8];
 
-<<<<<<< HEAD
         // Process APFSDS projectiles (type == 0)
         __m256 apfsds_mask = _mm256_cmp_ps(type_v, _mm256_set1_ps(0.0f), _CMP_EQ_OQ);
         if (_mm256_movemask_ps(apfsds_mask) != 0) {
@@ -506,7 +487,6 @@ void BallisticsSystem::calculate_penetration_batch(
         if (_mm256_movemask_ps(hesh_mask) != 0) {
             calculate_penetration_batch_hesh(
                 vel_v, ang_v, armor_v, hard_v, spall_v, hesh_mask,
-=======
         // Process APFSDS projectiles (type == 3)
         __m256 apfsds_mask = _mm256_cmp_ps(type_v, _mm256_set1_ps(3.0f), _CMP_EQ_OQ);
         if (_mm256_movemask_ps(apfsds_mask) != 0) {
@@ -531,7 +511,6 @@ void BallisticsSystem::calculate_penetration_batch(
             calculate_penetration_batch_hesh(
                 vel_v, ang_v, armor_v, hard_v, spall_v, hesh_mask,
                 exp_v,
->>>>>>> c308d63 (Helped the rabbits find a home)
                 penetrated_mask, depth, residual_energy);
         }
 
@@ -553,7 +532,6 @@ void BallisticsSystem::calculate_penetration_batch(
 
 void BallisticsSystem::calculate_penetration_batch_apfsds(
     __m256 velocity, __m256 angle, __m256 armor, __m256 hardness, __m256 spall_coeff, __m256 mask,
-<<<<<<< HEAD
     float* penetrated_mask, float* depth, float* residual_energy
 ) {
     // SIMD APFSDS penetration: P = (L/D) * sqrt(mass) * velocity / (K * hardness)
@@ -572,7 +550,6 @@ void BallisticsSystem::calculate_penetration_batch_apfsds(
         _mm256_mul_ps(k_factor, hardness)
     );
     penetration = _mm256_mul_ps(penetration, angle_factor);
-=======
     __m256 proj_mass, __m256 proj_length, __m256 proj_caliber,
     float* penetrated_mask, float* depth, float* residual_energy
 ) {
@@ -624,13 +601,11 @@ void BallisticsSystem::calculate_penetration_batch_apfsds(
         _mm256_mul_ps(velocity, cos_approx)
     );
     __m256 penetration = _mm256_div_ps(numerator, k_factor);
->>>>>>> c308d63 (Helped the rabbits find a home)
 
     // Compare with armor thickness
     __m256 penetrated = _mm256_cmp_ps(penetration, armor, _CMP_GE_OQ);
     penetrated = _mm256_and_ps(penetrated, mask);
 
-<<<<<<< HEAD
     // Calculate depth and residual energy
     __m256 calc_depth = _mm256_min_ps(penetration, armor);
     __m256 calc_residual = _mm256_set1_ps(0.0f);
@@ -642,7 +617,6 @@ void BallisticsSystem::calculate_penetration_batch_apfsds(
     _mm256_store_ps(penetrated_mask, penetrated);
     _mm256_store_ps(depth, calc_depth);
     _mm256_store_ps(residual_energy, calc_residual);
-=======
     // Calculate depth and residual velocity
     __m256 calc_depth = _mm256_min_ps(penetration, armor);
     
@@ -658,12 +632,10 @@ void BallisticsSystem::calculate_penetration_batch_apfsds(
     _mm256_store_ps(penetrated_mask, penetrated);
     _mm256_store_ps(depth, _mm256_blendv_ps(_mm256_set1_ps(0.0f), calc_depth, mask));
     _mm256_store_ps(residual_energy, _mm256_blendv_ps(_mm256_set1_ps(0.0f), calc_residual, mask));
->>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 void BallisticsSystem::calculate_penetration_batch_heat(
     __m256 velocity, __m256 angle, __m256 armor, __m256 hardness, __m256 spall_coeff, __m256 mask,
-<<<<<<< HEAD
     float* penetrated_mask, float* depth, float* residual_energy
 ) {
     // SIMD HEAT penetration: P = K * D^(2/3) / (1 + (S/D)^2)^(1/3)
@@ -694,7 +666,6 @@ void BallisticsSystem::calculate_penetration_batch_heat(
     penetrated = _mm256_and_ps(penetrated, mask);
 
     // Depth and residual (simplified)
-=======
     __m256 charge_diameter,
     float* penetrated_mask, float* depth, float* residual_energy
 ) {
@@ -767,7 +738,6 @@ void BallisticsSystem::calculate_penetration_batch_heat(
     _mm256_store_ps(depth, _mm256_blendv_ps(_mm256_set1_ps(0.0f), calc_depth, mask));
     _mm256_store_ps(residual_energy, _mm256_blendv_ps(_mm256_set1_ps(0.0f), calc_residual, mask));
 }
->>>>>>> c308d63 (Helped the rabbits find a home)
     __m256 calc_depth = _mm256_min_ps(penetration, armor);
     __m256 calc_residual = _mm256_set1_ps(0.0f);
 
@@ -779,7 +749,6 @@ void BallisticsSystem::calculate_penetration_batch_heat(
 
 void BallisticsSystem::calculate_penetration_batch_hesh(
     __m256 velocity, __m256 angle, __m256 armor, __m256 hardness, __m256 spall_coeff, __m256 mask,
-<<<<<<< HEAD
     float* penetrated_mask, float* depth, float* residual_energy
 ) {
     // SIMD HESH: spalling damage rather than deep penetration
@@ -799,7 +768,6 @@ void BallisticsSystem::calculate_penetration_batch_hesh(
 
     // Store results
     _mm256_store_ps(penetrated_mask, penetrated);
-=======
     __m256 explosive_mass,
     float* penetrated_mask, float* depth, float* residual_energy
 ) {
@@ -850,7 +818,6 @@ void BallisticsSystem::calculate_penetration_batch_hesh(
     _mm256_store_ps(depth, _mm256_blendv_ps(_mm256_set1_ps(0.0f), calc_depth, mask));
     _mm256_store_ps(residual_energy, _mm256_blendv_ps(_mm256_set1_ps(0.0f), calc_residual, mask));
 }
->>>>>>> c308d63 (Helped the rabbits find a home)
     _mm256_store_ps(depth, calc_depth);
     _mm256_store_ps(residual_energy, calc_residual);
 }
@@ -945,8 +912,6 @@ void BallisticsSystem::calculate_spalling_damage(
     spall_fragments.push_back(frag);
 }
 
-<<<<<<< HEAD
-=======
 float BallisticsSystem::calculate_de_marre_penetration(
     float projectile_mass_kg,
     float projectile_velocity_ms,
@@ -1175,7 +1140,6 @@ float BallisticsSystem::apply_environmental_modifiers(
     return factor;
 }
 
->>>>>>> c308d63 (Helped the rabbits find a home)
 // Multi-layered armor penetration calculation
 float BallisticsSystem::calculate_penetration_depth(
     const ProjectileCharacteristics& proj,
@@ -1234,7 +1198,6 @@ float BallisticsSystem::simulate_hydrodynamic_penetration(
     const ArmorLayer& layer,
     float velocity
 ) {
-<<<<<<< HEAD
     // V_pen = V_impact * (ρ_projectile / ρ_armor)^(1/3)
     float rho_ratio = std::cbrt(proj.density_kg_m3 / layer.density);
     float v_pen = velocity * rho_ratio;
@@ -1245,7 +1208,6 @@ float BallisticsSystem::simulate_hydrodynamic_penetration(
     float penetration = length * (1.0f - std::exp(exponent));
     
     return penetration * 1000.0f; // Convert back to mm
-=======
     // Alekseevskii-Tate hydrodynamic model:
     // P = L_striker * (1 - exp(-A))
     // where A = (ρ_armor / ρ_projectile) * (V / V_penetration)
@@ -1288,7 +1250,6 @@ float BallisticsSystem::simulate_hydrodynamic_penetration(
     
     // Convert back to mm and add small constant to avoid zero
     return std::max(0.0f, penetration_m * 1000.0f);
->>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 } // namespace physics_core

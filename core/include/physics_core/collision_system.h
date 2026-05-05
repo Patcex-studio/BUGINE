@@ -28,10 +28,7 @@
 #include <span>
 #include <vector>
 #include <memory>
-<<<<<<< HEAD
-=======
 #include <variant>
->>>>>>> c308d63 (Helped the rabbits find a home)
 
 namespace physics_core {
 
@@ -110,14 +107,11 @@ struct BVHNode {
     alignas(32) uint32_t entity_id[BVH_BATCH_SIZE];
     alignas(32) uint32_t flags[BVH_BATCH_SIZE];
 
-<<<<<<< HEAD
     // Новые поля для деформируемых тел
     alignas(32) bool is_deformable[BVH_BATCH_SIZE];
     alignas(32) const Vec3* vertex_data_ptr[BVH_BATCH_SIZE];
     alignas(32) uint32_t vertex_count[BVH_BATCH_SIZE];
 
-=======
->>>>>>> c308d63 (Helped the rabbits find a home)
     BVHNode();
 };
 
@@ -236,7 +230,6 @@ struct GJKSimplex {
 // Convex shape for GJK
 struct ConvexShape {
     enum class Type { Sphere, Box, Capsule, ConvexHull };
-<<<<<<< HEAD
     Type type;
     Vec3 center;
     union {
@@ -273,7 +266,6 @@ struct ConvexShape {
                 Vec3 best = hull.vertices[0];
                 float max_dot = best.dot(direction);
                 for (const auto& v : hull.vertices) {
-=======
     struct SphereShape { float radius; };
     struct BoxShape { Vec3 half_extents; Mat3x3 orientation; };
     struct CapsuleShape { float radius; float half_height; Vec3 axis; };
@@ -324,7 +316,6 @@ struct ConvexShape {
                 Vec3 best = vertices[0];
                 float max_dot = best.dot(direction);
                 for (const auto& v : vertices) {
->>>>>>> c308d63 (Helped the rabbits find a home)
                     float dot = v.dot(direction);
                     if (dot > max_dot) {
                         max_dot = dot;
@@ -425,10 +416,7 @@ public:
     // Детерминированный запрос CCD
     std::vector<CCDContact> query_ccd(
         std::span<const PhysicsBody> fast_bodies,
-<<<<<<< HEAD
         const BVH& world_bvh,
-=======
->>>>>>> c308d63 (Helped the rabbits find a home)
         float dt,
         uint64_t frame_seed
     );

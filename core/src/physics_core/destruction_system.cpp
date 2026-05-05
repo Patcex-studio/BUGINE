@@ -52,10 +52,7 @@ void DestructionSystem::simulate_collapse(DestructibleObject& object, TerrainSys
         return;
     }
 
-<<<<<<< HEAD
-=======
     // Extract bounding box bounds
->>>>>>> c308d63 (Helped the rabbits find a home)
     alignas(32) float min_values[8];
     alignas(32) float max_values[8];
     _mm256_store_ps(min_values, object.world_aabb_min);
@@ -64,11 +61,9 @@ void DestructionSystem::simulate_collapse(DestructibleObject& object, TerrainSys
     float center_x = (min_values[0] + max_values[0]) * 0.5f;
     float center_y = (min_values[1] + max_values[1]) * 0.5f;
     float center_z = (min_values[2] + max_values[2]) * 0.5f;
-<<<<<<< HEAD
     float radius = std::min(32.0f, static_cast<float>(object.fragment_count) * 0.8f + 4.0f);
     float depth = std::min(6.0f, radius * 0.18f);
 
-=======
     
     // Calculate size-based crater parameters
     float size_x = max_values[0] - min_values[0];
@@ -80,7 +75,6 @@ void DestructionSystem::simulate_collapse(DestructibleObject& object, TerrainSys
     float depth = std::min(8.0f, radius * 0.22f);
 
     // Create crater in terrain
->>>>>>> c308d63 (Helped the rabbits find a home)
     TerrainCrater crater;
     crater.center_x = center_x;
     crater.center_y = center_y;
@@ -94,10 +88,7 @@ void DestructionSystem::simulate_collapse(DestructibleObject& object, TerrainSys
     craters_.push_back(crater);
     terrain.apply_crater(crater);
 
-<<<<<<< HEAD
-=======
     // Publish destruction event
->>>>>>> c308d63 (Helped the rabbits find a home)
     common::EventBus::Publish(common::DestructionEvent{
         object.object_id,
         Vec3(center_x, center_y, center_z),
@@ -105,7 +96,6 @@ void DestructionSystem::simulate_collapse(DestructibleObject& object, TerrainSys
         2.0f
     });
 
-<<<<<<< HEAD
     // Generate fragments using destruction templates (simplified: triangular fragments)
     std::vector<EntityID> fragment_ids;
     fragment_ids.reserve(object.fragment_count);
@@ -137,7 +127,6 @@ void DestructionSystem::simulate_collapse(DestructibleObject& object, TerrainSys
         fragment_ids.push_back(id);
         
         // Set velocity directly on the created body
-=======
     // Generate realistic number of fragments based on structure
     // Typical destruction generates 4-12 fragments depending on object size and damage
     uint32_t num_fragments = std::min(object.fragment_count, 
@@ -198,23 +187,19 @@ void DestructionSystem::simulate_collapse(DestructibleObject& object, TerrainSys
         fragment_ids.push_back(id);
         
         // Set velocity on fragment
->>>>>>> c308d63 (Helped the rabbits find a home)
         if (PhysicsBody* body = physics_core.get_body(id)) {
             body->velocity = velocity;
         }
     }
 
-<<<<<<< HEAD
     // Mark original for removal
     physics_core.destroy_body(object.object_id);
     object.structural_integrity = 0.0f;
     object.fragment_count = std::max<uint32_t>(object.fragment_count, 1u);
-=======
     // Destroy original object
     physics_core.destroy_body(object.object_id);
     object.structural_integrity = 0.0f;
     object.fragment_count = num_fragments;
->>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 void DestructionSystem::update(float dt, TerrainSystem& terrain) {
