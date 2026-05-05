@@ -61,6 +61,7 @@ BallisticImpactResult DamageSystem::calculate_ballistic_impact(
     if (result.is_penetrated) {
         // Estimate exit position based on armor thickness and angle
         float exit_depth = result.penetration_depth_mm;
+<<<<<<< HEAD
         __m256 exit_offset = {
             impact_params.impact_normal[0] * exit_depth * 0.001f,
             impact_params.impact_normal[1] * exit_depth * 0.001f,
@@ -71,6 +72,26 @@ BallisticImpactResult DamageSystem::calculate_ballistic_impact(
         result.exit_position[0] += exit_offset[0];
         result.exit_position[1] += exit_offset[1];
         result.exit_position[2] += exit_offset[2];
+=======
+        alignas(32) float normal[8];
+        _mm256_store_ps(normal, impact_params.impact_normal);
+        __m256 exit_offset = _mm256_set_ps(
+            0.0f,
+            normal[2] * exit_depth * 0.001f,
+            normal[1] * exit_depth * 0.001f,
+            normal[0] * exit_depth * 0.001f,
+            0.0f,
+            0.0f,
+            0.0f,
+            0.0f
+        );
+        alignas(32) float pos[8];
+        _mm256_store_ps(pos, result.impact_position);
+        pos[0] += normal[0] * exit_depth * 0.001f;
+        pos[1] += normal[1] * exit_depth * 0.001f;
+        pos[2] += normal[2] * exit_depth * 0.001f;
+        result.exit_position = _mm256_load_ps(pos);
+>>>>>>> c308d63 (Helped the rabbits find a home)
     }
     
     return result;
@@ -168,9 +189,19 @@ void DamageSystem::apply_damage_to_vehicle(
     
     for (auto& component : vehicle_state.component_damage_states) {
         // Calculate distance from impact position
+<<<<<<< HEAD
         float distance_x = component.damage_position[0] - impact.impact_position[0];
         float distance_y = component.damage_position[1] - impact.impact_position[1];
         float distance_z = component.damage_position[2] - impact.impact_position[2];
+=======
+        alignas(32) float impact_pos[8];
+        _mm256_store_ps(impact_pos, impact.impact_position);
+        alignas(32) float comp_pos[8];
+        _mm256_store_ps(comp_pos, component.damage_position);
+        float distance_x = comp_pos[0] - impact_pos[0];
+        float distance_y = comp_pos[1] - impact_pos[1];
+        float distance_z = comp_pos[2] - impact_pos[2];
+>>>>>>> c308d63 (Helped the rabbits find a home)
         float distance = std::sqrt(distance_x*distance_x + distance_y*distance_y + distance_z*distance_z);
         
         // Apply splash damage if close enough
@@ -390,7 +421,13 @@ void DamageSystem::calculate_vehicle_status(
         float health_ratio = comp.current_health;
         
         // Mobility-related components (engine, tracks, suspension)
+<<<<<<< HEAD
         if (comp.damage_position[0] != 0 || comp.damage_position[1] != 0 || comp.damage_position[2] != 0) {
+=======
+        alignas(32) float damage_pos[8];
+        _mm256_store_ps(damage_pos, comp.damage_position);
+        if (damage_pos[0] != 0.0f || damage_pos[1] != 0.0f || damage_pos[2] != 0.0f) {
+>>>>>>> c308d63 (Helped the rabbits find a home)
             // Simplified component type detection based on naming convention
             // In real implementation, would have component type stored
             total_mobility_health += health_ratio;

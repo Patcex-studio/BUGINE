@@ -72,6 +72,7 @@ void HierarchicalGrid::build(const float* positions_x, const float* positions_y,
     build_blocks(positions_x, positions_y, positions_z, count);
 }
 
+<<<<<<< HEAD
 template<typename Func>
 void HierarchicalGrid::query_radius(float x, float y, float z, float radius, Func&& callback) const {
     std::vector<uint32_t> overlapping_blocks;
@@ -91,6 +92,8 @@ void HierarchicalGrid::query_radius(float x, float y, float z, float radius, Fun
     }
 }
 
+=======
+>>>>>>> c308d63 (Helped the rabbits find a home)
 size_t HierarchicalGrid::memory_usage() const {
     return blocks_.capacity() * sizeof(Block) +
            sorted_indices_.capacity() * sizeof(uint32_t) +

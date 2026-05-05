@@ -20,6 +20,10 @@
 #include <immintrin.h>
 #include <algorithm>
 #include <cmath>
+<<<<<<< HEAD
+=======
+#include <unordered_map>
+>>>>>>> c308d63 (Helped the rabbits find a home)
 
 namespace physics_core {
 
@@ -93,6 +97,12 @@ void ThermalSystem::update(float dt)
     // Main thermal computations
     compute_heat_transfer_simd(dt);
     process_phase_transitions();
+<<<<<<< HEAD
+=======
+    
+    // Update SPH fluid properties based on new temperatures
+    update_thermal_properties();
+>>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 void ThermalSystem::add_thermal_energy(uint32_t particle_idx, float energy, float mass)
@@ -252,6 +262,67 @@ void ThermalSystem::process_phase_transitions()
     }
 }
 
+<<<<<<< HEAD
+=======
+void ThermalSystem::update_thermal_properties()
+{
+    if (!sph_system_) return;
+    
+    // Track fluid property changes by type
+    std::unordered_map<uint8_t, float> avg_temperature_by_type;
+    std::unordered_map<uint8_t, uint32_t> particle_count_by_type;
+    
+    // Calculate average temperature per fluid type
+    for (size_t i = 0; i < thermal_particles_.count; ++i) {
+        uint8_t fluid_type = thermal_particles_.material_type[i];
+        avg_temperature_by_type[fluid_type] += thermal_particles_.temperature[i];
+        particle_count_by_type[fluid_type]++;
+    }
+    
+    // Update SPH fluid properties based on temperature
+    // Viscosity increases with temperature (simplified: quadratic relationship)
+    // Reference: viscosity doubles approximately every 10K for most fluids
+    for (const auto& [fluid_type, count] : particle_count_by_type) {
+        if (count == 0) continue;
+        
+        float avg_temp = avg_temperature_by_type[fluid_type] / count;
+        const float ref_temp = 293.15f;  // 20°C reference
+        
+        // Get base properties
+        float base_density = 1000.0f;  // Default water
+        float base_viscosity = 0.001f;
+        
+        FluidType fluid = static_cast<FluidType>(fluid_type);
+        
+        // Temperature-dependent viscosity: η(T) = η₀ * exp(E_a / R * (1/T - 1/T₀))
+        // Simplified: η(T) = η₀ * (1 + α * ΔT)
+        // For water: α ≈ -0.027 K⁻¹ (viscosity DECREASES with temperature)
+        // For oil/fuel: α ≈ -0.008 K⁻¹
+        
+        float alpha = -0.027f;  // Default for water
+        if (fluid == FluidType::OIL || fluid == FluidType::FUEL) {
+            alpha = -0.008f;
+        } else if (fluid == FluidType::MUD || fluid == FluidType::BLOOD) {
+            alpha = -0.012f;
+        }
+        
+        float delta_temp = avg_temp - ref_temp;
+        float viscosity_factor = 1.0f + alpha * delta_temp;
+        
+        // Temperature affects density slightly (≈ 0.2% per 1°C for water)
+        float beta = -0.0002f;  // Volume expansion coefficient
+        float density_factor = 1.0f / (1.0f + beta * delta_temp);
+        
+        // Apply modified properties to SPH system
+        // set_fluid_properties(fluid_type, density, viscosity)
+        float new_density = base_density * density_factor;
+        float new_viscosity = base_viscosity * std::max(0.1f, viscosity_factor);
+        
+        sph_system_->set_fluid_properties(fluid, new_density, new_viscosity);
+    }
+}
+
+>>>>>>> c308d63 (Helped the rabbits find a home)
 void ThermalSystem::transition_particle(uint32_t idx, PhaseState new_phase)
 {
     if (idx >= thermal_particles_.count) return;

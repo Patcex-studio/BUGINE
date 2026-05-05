@@ -105,4 +105,26 @@ private:
     void find_overlapping_blocks(float x, float y, float z, float radius, std::vector<uint32_t>& block_indices) const;
 };
 
+<<<<<<< HEAD
+=======
+template<typename Func>
+void HierarchicalGrid::query_radius(float x, float y, float z, float radius, Func&& callback) const {
+    std::vector<uint32_t> overlapping_blocks;
+    find_overlapping_blocks(x, y, z, radius, overlapping_blocks);
+    
+    for (uint32_t block_idx : overlapping_blocks) {
+        const Block& block = blocks_[block_idx];
+        
+        // Check each particle in the block
+        for (uint32_t i = 0; i < block.count; ++i) {
+            uint32_t particle_idx = sorted_indices_[block.start_index + i];
+            
+            // Distance check would be done by caller since we don't have position arrays here
+            // This is just the block filtering - actual distance check happens in DEMSystem
+            callback(particle_idx);
+        }
+    }
+}
+
+>>>>>>> c308d63 (Helped the rabbits find a home)
 } // namespace physics_core

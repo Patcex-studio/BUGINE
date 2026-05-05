@@ -171,6 +171,19 @@ struct Mat3x3 {
         }
         return result;
     }
+<<<<<<< HEAD
+=======
+
+    Mat3x3 operator+(const Mat3x3& m) const {
+        Mat3x3 result;
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                result(i, j) = (*this)(i, j) + m(i, j);
+            }
+        }
+        return result;
+    }
+>>>>>>> c308d63 (Helped the rabbits find a home)
 };
 
 // 4x4 Homogeneous transformation matrix

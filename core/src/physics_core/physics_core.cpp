@@ -62,6 +62,12 @@ void PhysicsCore::initialize(size_t thread_count, int integrator_type) {
     environment_system_ = std::make_unique<EnvironmentSystem>();
     destruction_system_ = std::make_unique<DestructionSystem>();
 
+    // Create specialized subsystems
+    thermal_system_ = std::make_unique<ThermalSystem>(fluid_system_.get());
+    acoustics_system_ = std::make_unique<AcousticsSystem>();
+    crew_damage_system_ = std::make_unique<CrewDamageSystem>();
+    hybrid_precision_ = std::make_unique<HybridPrecisionSystem>();
+
     // Create integrator
     switch (integrator_type) {
         case 0:
@@ -105,6 +111,12 @@ void PhysicsCore::shutdown() {
     terrain_system_.reset();
     environment_system_.reset();
     destruction_system_.reset();
+
+    // Shutdown specialized subsystems
+    thermal_system_.reset();
+    acoustics_system_.reset();
+    crew_damage_system_.reset();
+    hybrid_precision_.reset();
     
     initialized_ = false;
 }
@@ -399,6 +411,12 @@ void PhysicsCore::apply_impulse(EntityID id, const Vec3& impulse, const Vec3& po
     }
 }
 
+void PhysicsCore::apply_torque(EntityID id, const Vec3& torque) {
+    if (rigid_body_system_->get_body(id)) {
+        rigid_body_system_->apply_torque(id, torque);
+    }
+}
+
 // ========== Coordinate Systems ==========
 
 EntityID PhysicsCore::create_local_frame(
@@ -459,6 +477,20 @@ void PhysicsCore::update_all_systems(float dt) {
     }
     fluid_system_->update(dt);
     gas_system_->update(dt);
+    
+    // Update specialized subsystems
+    if (thermal_system_) {
+        thermal_system_->update(dt);
+    }
+    
+    if (acoustics_system_) {
+        acoustics_system_->update(dt, dt);
+    }
+    
+    // Sync floating origin for large-map stability
+    if (hybrid_precision_) {
+        hybrid_precision_->apply_pending_shift();
+    }
 }
 
 void PhysicsCore::detect_and_handle_collisions(float dt) {

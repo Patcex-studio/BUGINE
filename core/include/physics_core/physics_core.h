@@ -31,6 +31,10 @@
 #include "terrain_system.h"
 #include "environment_system.h"
 #include "destruction_system.h"
+#include "thermal_system.h"
+#include "acoustics_system.h"
+#include "crew_damage_system.h"
+#include "hybrid_precision.h"
 #include <functional>
 #include <memory>
 #include <vector>
@@ -257,6 +261,13 @@ public:
      */
     void apply_impulse(EntityID id, const Vec3& impulse, const Vec3& point = Vec3());
 
+    /**
+     * Apply torque to a body (rotational force)
+     * @param id Body ID
+     * @param torque Torque vector (N*m)
+     */
+    void apply_torque(EntityID id, const Vec3& torque);
+
     // ========== Environment Integration ==========
 
     /**
@@ -316,6 +327,26 @@ public:
      * Get soft body system
      */
     SoftBodySystem* get_soft_body_system() { return soft_body_system_.get(); }
+
+    /**
+     * Get thermal system
+     */
+    ThermalSystem* get_thermal_system() { return thermal_system_.get(); }
+
+    /**
+     * Get acoustics system
+     */
+    AcousticsSystem* get_acoustics_system() { return acoustics_system_.get(); }
+
+    /**
+     * Get crew damage system (for querying crew status)
+     */
+    CrewDamageSystem* get_crew_damage_system() { return crew_damage_system_.get(); }
+
+    /**
+     * Get hybrid precision system for floating origin management
+     */
+    HybridPrecisionSystem* get_hybrid_precision_system() { return hybrid_precision_.get(); }
 
     // ========== Callbacks ==========
 
@@ -382,6 +413,12 @@ private:
     std::unique_ptr<TerrainSystem> terrain_system_;
     std::unique_ptr<EnvironmentSystem> environment_system_;
     std::unique_ptr<DestructionSystem> destruction_system_;
+
+    // Specialized subsystems
+    std::unique_ptr<ThermalSystem> thermal_system_;
+    std::unique_ptr<AcousticsSystem> acoustics_system_;
+    std::unique_ptr<CrewDamageSystem> crew_damage_system_;
+    std::unique_ptr<HybridPrecisionSystem> hybrid_precision_;
 
     // Callbacks
     OnBodyAddedCallback body_added_cb_;

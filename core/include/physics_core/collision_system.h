@@ -28,6 +28,10 @@
 #include <span>
 #include <vector>
 #include <memory>
+<<<<<<< HEAD
+=======
+#include <variant>
+>>>>>>> c308d63 (Helped the rabbits find a home)
 
 namespace physics_core {
 
@@ -106,11 +110,14 @@ struct BVHNode {
     alignas(32) uint32_t entity_id[BVH_BATCH_SIZE];
     alignas(32) uint32_t flags[BVH_BATCH_SIZE];
 
+<<<<<<< HEAD
     // Новые поля для деформируемых тел
     alignas(32) bool is_deformable[BVH_BATCH_SIZE];
     alignas(32) const Vec3* vertex_data_ptr[BVH_BATCH_SIZE];
     alignas(32) uint32_t vertex_count[BVH_BATCH_SIZE];
 
+=======
+>>>>>>> c308d63 (Helped the rabbits find a home)
     BVHNode();
 };
 
@@ -229,6 +236,7 @@ struct GJKSimplex {
 // Convex shape for GJK
 struct ConvexShape {
     enum class Type { Sphere, Box, Capsule, ConvexHull };
+<<<<<<< HEAD
     Type type;
     Vec3 center;
     union {
@@ -265,6 +273,58 @@ struct ConvexShape {
                 Vec3 best = hull.vertices[0];
                 float max_dot = best.dot(direction);
                 for (const auto& v : hull.vertices) {
+=======
+    struct SphereShape { float radius; };
+    struct BoxShape { Vec3 half_extents; Mat3x3 orientation; };
+    struct CapsuleShape { float radius; float half_height; Vec3 axis; };
+    using Hull = std::vector<Vec3>;
+
+    Type type;
+    Vec3 center;
+    std::variant<SphereShape, BoxShape, CapsuleShape, Hull> data;
+
+    ConvexShape() = default;
+
+    bool is_sphere() const { return std::holds_alternative<SphereShape>(data); }
+    bool is_box() const { return std::holds_alternative<BoxShape>(data); }
+    bool is_capsule() const { return std::holds_alternative<CapsuleShape>(data); }
+    bool is_hull() const { return std::holds_alternative<Hull>(data); }
+
+    const SphereShape& sphere() const { return std::get<SphereShape>(data); }
+    const BoxShape& box() const { return std::get<BoxShape>(data); }
+    const CapsuleShape& capsule() const { return std::get<CapsuleShape>(data); }
+    const Hull& hull() const { return std::get<Hull>(data); }
+
+    Vec3 support(const Vec3& direction) const {
+        switch (type) {
+            case Type::Sphere: return center + direction.normalized() * std::get<SphereShape>(data).radius;
+            case Type::Box: {
+                const BoxShape& box_shape = std::get<BoxShape>(data);
+                Vec3 d = box_shape.orientation * direction;
+                Vec3 support = Vec3(
+                    d.x > 0 ? box_shape.half_extents.x : -box_shape.half_extents.x,
+                    d.y > 0 ? box_shape.half_extents.y : -box_shape.half_extents.y,
+                    d.z > 0 ? box_shape.half_extents.z : -box_shape.half_extents.z
+                );
+                Vec3 result;
+                result.x = support.x * box_shape.orientation(0,0) + support.y * box_shape.orientation(1,0) + support.z * box_shape.orientation(2,0);
+                result.y = support.x * box_shape.orientation(0,1) + support.y * box_shape.orientation(1,1) + support.z * box_shape.orientation(2,1);
+                result.z = support.x * box_shape.orientation(0,2) + support.y * box_shape.orientation(1,2) + support.z * box_shape.orientation(2,2);
+                return center + result;
+            }
+            case Type::Capsule: {
+                const CapsuleShape& capsule_shape = std::get<CapsuleShape>(data);
+                Vec3 dir = direction.normalized();
+                float proj = dir.dot(capsule_shape.axis.normalized());
+                Vec3 point = capsule_shape.axis * (proj > 0 ? capsule_shape.half_height : -capsule_shape.half_height);
+                return center + point + dir * capsule_shape.radius;
+            }
+            case Type::ConvexHull: {
+                const Hull& vertices = std::get<Hull>(data);
+                Vec3 best = vertices[0];
+                float max_dot = best.dot(direction);
+                for (const auto& v : vertices) {
+>>>>>>> c308d63 (Helped the rabbits find a home)
                     float dot = v.dot(direction);
                     if (dot > max_dot) {
                         max_dot = dot;
@@ -365,7 +425,10 @@ public:
     // Детерминированный запрос CCD
     std::vector<CCDContact> query_ccd(
         std::span<const PhysicsBody> fast_bodies,
+<<<<<<< HEAD
         const BVH& world_bvh,
+=======
+>>>>>>> c308d63 (Helped the rabbits find a home)
         float dt,
         uint64_t frame_seed
     );

@@ -95,6 +95,20 @@ void RigidBodySystem::apply_impulse(EntityID id, const Vec3& impulse, const Vec3
     body->velocity = body->velocity + impulse * body->inv_mass;
 }
 
+<<<<<<< HEAD
+=======
+void RigidBodySystem::apply_torque(EntityID id, const Vec3& torque) {
+    size_t index = bodies_.get_index(id);
+    if (index == SIZE_MAX || index >= torque_x_.size()) {
+        return;
+    }
+
+    torque_x_[index] += static_cast<float>(torque.x);
+    torque_y_[index] += static_cast<float>(torque.y);
+    torque_z_[index] += static_cast<float>(torque.z);
+}
+
+>>>>>>> c308d63 (Helped the rabbits find a home)
 void RigidBodySystem::set_gravity(const Vec3& gravity) {
     gravity_ = gravity;
 }
@@ -194,6 +208,43 @@ void RigidBodySystem::update_forces_and_torques(float dt) {
         force_y_[i] = 0.0f;
         force_z_[i] = 0.0f;
     }
+<<<<<<< HEAD
+=======
+
+    // Apply accumulated torques and update angular state
+    for (size_t j = 0; j < count; ++j) {
+        PhysicsBody& body = bodies[j];
+        if (!body.is_enabled || body.body_type == 0) {
+            torque_x_[j] = 0.0f;
+            torque_y_[j] = 0.0f;
+            torque_z_[j] = 0.0f;
+            continue;
+        }
+
+        Vec3 torque(static_cast<double>(torque_x_[j]), static_cast<double>(torque_y_[j]), static_cast<double>(torque_z_[j]));
+        body.angular_acceleration = body.inertia_tensor_inv * torque;
+        body.angular_velocity = body.angular_velocity + body.angular_acceleration * dt;
+
+        // Small-angle approximation for orientation update
+        Vec3 omega_dt = body.angular_velocity * static_cast<double>(dt);
+        Mat3x3 omega_skew;
+        omega_skew(0, 0) = 0.0;
+        omega_skew(0, 1) = -omega_dt.z;
+        omega_skew(0, 2) = omega_dt.y;
+        omega_skew(1, 0) = omega_dt.z;
+        omega_skew(1, 1) = 0.0;
+        omega_skew(1, 2) = -omega_dt.x;
+        omega_skew(2, 0) = -omega_dt.y;
+        omega_skew(2, 1) = omega_dt.x;
+        omega_skew(2, 2) = 0.0;
+
+        body.orientation = body.orientation + omega_skew * body.orientation;
+
+        torque_x_[j] = 0.0f;
+        torque_y_[j] = 0.0f;
+        torque_z_[j] = 0.0f;
+    }
+>>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 }  // namespace physics_core

@@ -271,7 +271,11 @@ float CrewDamageSystem::calculate_crew_effectiveness(
         case CrewPosition::GUNNER:
             // Requires precision, hand injuries critical
             for (const auto& injury : crew_member.injuries) {
+<<<<<<< HEAD
                 if (injury == InjuryType::BONE_FRACTURE) {
+=======
+                if (injury.type == InjuryType::BONE_FRACTURE) {
+>>>>>>> c308d63 (Helped the rabbits find a home)
                     base_effectiveness *= 0.5f;
                 }
             }
@@ -279,8 +283,13 @@ float CrewDamageSystem::calculate_crew_effectiveness(
         case CrewPosition::DRIVER:
             // Requires mobility
             for (const auto& injury : crew_member.injuries) {
+<<<<<<< HEAD
                 if (injury == InjuryType::BONE_FRACTURE || 
                     injury == InjuryType::CRUSHING_INJURY) {
+=======
+                if (injury.type == InjuryType::BONE_FRACTURE || 
+                    injury.type == InjuryType::CRUSHING_INJURY) {
+>>>>>>> c308d63 (Helped the rabbits find a home)
                     base_effectiveness *= 0.6f;
                 }
             }
@@ -336,7 +345,12 @@ void CrewDamageSystem::apply_laceration_injury(
     float severity,
     float blood_loss_factor
 ) {
+<<<<<<< HEAD
     crew_member.injuries.push_back(InjuryType::SEVERE_LACERATION);
+=======
+    Injury inj{InjuryType::SEVERE_LACERATION, severity, severity * blood_loss_factor * 0.2f, severity * 0.5f};
+    crew_member.injuries.push_back(inj);
+>>>>>>> c308d63 (Helped the rabbits find a home)
     crew_member.blood_loss_rate += severity * blood_loss_factor * 0.2f;
     crew_member.pain_level += severity * 0.5f;
 }
@@ -345,7 +359,12 @@ void CrewDamageSystem::apply_fracture_injury(
     CrewDamageState& crew_member,
     float severity
 ) {
+<<<<<<< HEAD
     crew_member.injuries.push_back(InjuryType::BONE_FRACTURE);
+=======
+    Injury inj{InjuryType::BONE_FRACTURE, severity, severity * 0.05f, severity * 0.8f};
+    crew_member.injuries.push_back(inj);
+>>>>>>> c308d63 (Helped the rabbits find a home)
     crew_member.blood_loss_rate += severity * 0.05f;  // Fractures bleed less
     crew_member.pain_level += severity * 0.8f;  // Very painful
 }
@@ -354,7 +373,12 @@ void CrewDamageSystem::apply_internal_bleeding_injury(
     CrewDamageState& crew_member,
     float severity
 ) {
+<<<<<<< HEAD
     crew_member.injuries.push_back(InjuryType::INTERNAL_BLEEDING);
+=======
+    Injury inj{InjuryType::INTERNAL_BLEEDING, severity, severity * 0.5f, severity * 0.3f};
+    crew_member.injuries.push_back(inj);
+>>>>>>> c308d63 (Helped the rabbits find a home)
     crew_member.blood_loss_rate += severity * 0.5f;
     crew_member.injury_severity += severity * 0.3f;
 }
@@ -364,7 +388,12 @@ void CrewDamageSystem::apply_burn_injury(
     float severity,
     float burn_area_percent
 ) {
+<<<<<<< HEAD
     crew_member.injuries.push_back(InjuryType::BURN);
+=======
+    Injury inj{InjuryType::BURN, severity, severity * 0.3f, severity * 0.9f};
+    crew_member.injuries.push_back(inj);
+>>>>>>> c308d63 (Helped the rabbits find a home)
     crew_member.blood_loss_rate += severity * 0.3f;
     crew_member.injury_severity += severity * burn_area_percent / 100.0f;
     crew_member.pain_level += severity * 0.9f;  // Burns are extremely painful
@@ -374,7 +403,12 @@ void CrewDamageSystem::apply_concussion_injury(
     CrewDamageState& crew_member,
     float severity
 ) {
+<<<<<<< HEAD
     crew_member.injuries.push_back(InjuryType::CONCUSSION);
+=======
+    Injury inj{InjuryType::CONCUSSION, severity, 0.0f, severity * 0.6f};
+    crew_member.injuries.push_back(inj);
+>>>>>>> c308d63 (Helped the rabbits find a home)
     crew_member.consciousness_level -= severity * 0.4f;
     crew_member.pain_level += severity * 0.6f;
 }
@@ -384,7 +418,12 @@ void CrewDamageSystem::apply_shrapnel_injury(
     float severity,
     uint32_t fragment_count
 ) {
+<<<<<<< HEAD
     crew_member.injuries.push_back(InjuryType::SHRAPNEL_WOUND);
+=======
+    Injury inj{InjuryType::SHRAPNEL_WOUND, severity, severity * 0.4f * fragment_count, severity * 0.7f};
+    crew_member.injuries.push_back(inj);
+>>>>>>> c308d63 (Helped the rabbits find a home)
     crew_member.blood_loss_rate += severity * 0.4f * fragment_count;
     crew_member.pain_level += severity * 0.7f;
 }
@@ -393,7 +432,12 @@ void CrewDamageSystem::apply_crushing_injury(
     CrewDamageState& crew_member,
     float severity
 ) {
+<<<<<<< HEAD
     crew_member.injuries.push_back(InjuryType::CRUSHING_INJURY);
+=======
+    Injury inj{InjuryType::CRUSHING_INJURY, severity, severity * 0.6f, severity * 0.8f};
+    crew_member.injuries.push_back(inj);
+>>>>>>> c308d63 (Helped the rabbits find a home)
     crew_member.blood_loss_rate += severity * 0.6f;  // Heavy bleeding
     crew_member.pain_level += severity * 0.8f;
     crew_member.injury_severity += severity * 0.4f;

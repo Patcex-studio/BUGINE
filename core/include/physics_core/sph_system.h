@@ -27,6 +27,8 @@
 
 namespace physics_core {
 
+class PhysicsCore;
+
 // ============================================================================
 // SPH Particle Types and Constants
 // ============================================================================
@@ -368,9 +370,10 @@ public:
     /**
      * Apply boundary forces from solid bodies (for two-way coupling)
      * @param boundary_particles Boundary particles from SPHBoundarySystem
+     * @param physics Core physics interface for rigid body application
      * @param dt Time step
      */
-    void apply_boundary_forces(const class SPHBoundarySystem* boundary_system, float dt);
+    void apply_boundary_forces(class SPHBoundarySystem* boundary_system, PhysicsCore& physics, float dt);
 
     /**
      * Set artificial viscosity coefficient for shockwave stability
@@ -425,7 +428,7 @@ private:
     void compute_densities_simd();
     void compute_pressures_simd();
     void compute_forces_simd();
-    void compute_boundary_forces_simd(const class SPHBoundarySystem* boundary_system);
+    void compute_boundary_forces_simd(class SPHBoundarySystem* boundary_system);
     void apply_xsph_smoothing();
     void integrate_particles_simd(float dt);
 

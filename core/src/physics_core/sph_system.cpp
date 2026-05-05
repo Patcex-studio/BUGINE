@@ -18,6 +18,10 @@
 */
 #include "physics_core/sph_system.h"
 #include "physics_core/sph_boundary_system.h"
+<<<<<<< HEAD
+=======
+#include "physics_core/physics_core.h"
+>>>>>>> c308d63 (Helped the rabbits find a home)
 #include "physics_core/thermal_system.h"
 #include <algorithm>
 #include <unordered_map>
@@ -360,6 +364,12 @@ void SPHSystem::update(float dt) {
     compute_densities_simd();
     compute_pressures_simd();
     compute_forces_simd();
+    
+    // Apply boundary forces for two-way interaction with rigid bodies/containers
+    if (boundary_system_) {
+        compute_boundary_forces_simd(boundary_system_);
+    }
+    
     apply_xsph_smoothing();
     integrate_particles_simd(dt);
 
@@ -700,25 +710,24 @@ float SPHSystem::get_viscosity(FluidType type) const {
 // Boundary Particle Coupling (Phase 4: Fluid-Solid Interaction)
 // ============================================================================
 
-void SPHSystem::apply_boundary_forces(const SPHBoundarySystem* boundary_system, float dt)
+void SPHSystem::apply_boundary_forces(SPHBoundarySystem* boundary_system, PhysicsCore& physics, float dt)
 {
     if (!boundary_system || particles_.empty()) {
         return;
     }
     
-    // Forward declare SPHBoundarySystem to avoid circular include
-    // In practice, make this a parameter or access through interface
     compute_boundary_forces_simd(boundary_system);
+    boundary_system->apply_accumulated_body_forces(physics);
 }
 
-void SPHSystem::compute_boundary_forces_simd(const SPHBoundarySystem* boundary_system)
+void SPHSystem::compute_boundary_forces_simd(SPHBoundarySystem* boundary_system)
 {
     // This method implements two-way coupling between SPH fluid and rigid bodies
     // represented by boundary particles
     
     if (!boundary_system) return;
     
-    const auto& boundary_particles = boundary_system->get_particles();
+    auto& boundary_particles = boundary_system->get_particles_mut();
     if (boundary_particles.count == 0) return;
     
     const size_t fluid_count = particles_.size();
@@ -752,13 +761,24 @@ void SPHSystem::compute_boundary_forces_simd(const SPHBoundarySystem* boundary_s
                 fy += mag * dy;
                 fz += mag * dz;
                 
+<<<<<<< HEAD
                 // Force is applied to fluid
+=======
+                // Force is applied to fluid particle
+>>>>>>> c308d63 (Helped the rabbits find a home)
                 acc_x_[i] += fx / mass_[i];
                 acc_y_[i] += fy / mass_[i];
                 acc_z_[i] += fz / mass_[i];
                 
+<<<<<<< HEAD
                 // Opposite force applied to rigid body (accumulated in boundary system)
                 // This is handled externally after computing forces
+=======
+                // Opposite force applied to rigid body via boundary particles
+                // Accumulate in boundary system for later application
+                Vec3 reaction_force(-fx, -fy, -fz);
+                boundary_system->add_particle_force(j, reaction_force);
+>>>>>>> c308d63 (Helped the rabbits find a home)
             }
         }
     }

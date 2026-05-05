@@ -2,6 +2,7 @@
 > **Bugs are features in motion.** 🦘💨
 
 ![License](https://img.shields.io/badge/License-AGPL_v3-blue.svg)
+<<<<<<< HEAD
 ![Research](https://img.shields.io/badge/For-Research%20%26%20Learning-purple)
 ![Build](https://img.shields.io/badge/Build-CMake%20%7C%20C++20-success)
 ![Examples](https://img.shields.io/badge/Examples-Combat%20%7C%20Flight%20%7C%20Terrain-blue)
@@ -11,6 +12,11 @@
 ![Stability](https://img.shields.io/badge/Stability-Unstable-yellow)
 ![Bugs](https://img.shields.io/badge/Bugs-Welcome!-ff69b4)
 ![Contributions](https://img.shields.io/badge/Contributions-Welcome-brightgreen)
+=======
+![Status](https://img.shields.io/badge/Status-Prototype_Chaos-orange.svg)
+![SIMD](https://img.shields.io/badge/Optimization-AVX2_SIMD-green.svg)
+![Bugs](https://img.shields.io/badge/Bugs-Multiplying-red.svg)
+>>>>>>> c308d63 (Helped the rabbits find a home)
 
 **BUGINE** is a high-performance physics prototype where bugs multiply like bunnies. Built on **C++20**, it's fast enough to crash before you see the glitch. 
 
@@ -28,7 +34,10 @@
 | **GJK/EPA Solver** | 🐛 **Buggy** | Precise penetration depth. Sometimes penetrates reality. |
 | **Community** | ❤️ **Alive** | Bugs = Growth. We eat what others throw away. |
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> c308d63 (Helped the rabbits find a home)
 ---
 
 ## 🛠️ Under the Hood (The Serious Part)
@@ -58,8 +67,11 @@ return temp[index];           // Hope the index exists 🤞
 
 **We don't fix bugs. We evolve them.**
 
+<<<<<<< HEAD
 ![BUGINE](https://img.shields.io/badge/BUGINE-Bunny's%20Unstable%20Gravity%20&%20Interaction%20Numerical%20Engine-ff69b4?style=for-the-badge&logo=rabbitmq)
 
+=======
+>>>>>>> c308d63 (Helped the rabbits find a home)
 ---
 
 ## ⚠️ Warning (Read This)
@@ -85,13 +97,18 @@ This is a **prototype**.
 
 ## 📜 License
 
+<<<<<<< HEAD
 **AGPLv3 or commercial** —  This license applies only to the original source code written by the authors of this project. Any external libraries, tools, or dependencies used by BUGINE retain their own respective licenses. You are responsible for complying with those licenses when redistributing or using this software. 
+=======
+**AGPLv3 or commercial** — Share the bugs, share the fixes. 
+>>>>>>> c308d63 (Helped the rabbits find a home)
 *Soft Name. Hard Math. Many Bugs.*
 
 ---
 
 <img width="1536" height="1024" alt="2b2d82f3-f839-400f-bac4-d4b07e1b23f8" src="https://github.com/user-attachments/assets/76c21d2d-82ef-444c-a3cd-13bf42222370" />
 
+<<<<<<< HEAD
 ---
 
 
@@ -104,6 +121,8 @@ This is a **prototype**.
 [![Forks](https://img.shields.io/github/forks/Patcex-studio/BUGINE?style=for-the-badge&logo=github)](https://github.com/Patcex-studio/BUGINE/forks)
 [![Issues](https://img.shields.io/github/issues/Patcex-studio/BUGINE?style=for-the-badge&logo=github)](https://github.com/Patcex-studio/BUGINE/issues)
 [![Last Commit](https://img.shields.io/github/last-commit/Patcex-studio/BUGINE?style=for-the-badge&logo=git)](https://github.com/Patcex-studio/BUGINE/commits/master)
+=======
+>>>>>>> c308d63 (Helped the rabbits find a home)
 
 ---
 <div align="center">

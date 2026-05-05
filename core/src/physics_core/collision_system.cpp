@@ -19,6 +19,10 @@
 #include "physics_core/collision_system.h"
 #include "physics_core/async_bvh_builder.h"
 #include "physics_core/profile_macros.h"
+<<<<<<< HEAD
+=======
+#include "physics_core/simd_config.h"
+>>>>>>> c308d63 (Helped the rabbits find a home)
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -81,9 +85,12 @@ BVHNode::BVHNode() {
     std::fill(std::begin(right_child), std::end(right_child), BVH_INVALID_NODE);
     std::fill(std::begin(entity_id), std::end(entity_id), BVH_INVALID_NODE);
     std::fill(std::begin(flags), std::end(flags), 0u);
+<<<<<<< HEAD
     std::fill(std::begin(is_deformable), std::end(is_deformable), false);
     std::fill(std::begin(vertex_data_ptr), std::end(vertex_data_ptr), nullptr);
     std::fill(std::begin(vertex_count), std::end(vertex_count), 0u);
+=======
+>>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 // -----------------------------------------------------------------------------
@@ -928,7 +935,12 @@ void BVHCollisionSystem::refit_bvh(const float* positions_x, const float* positi
     for (size_t node_idx = leaf_start; node_idx < nodes_.size(); ++node_idx) {
         BVHNode& node = nodes_[node_idx];
         for (size_t lane = 0; lane < BVH_BATCH_SIZE; ++lane) {
+<<<<<<< HEAD
             if (node.entity_id[lane] != BVH_INVALID_NODE && object_idx < count) {
+=======
+            if (object_idx >= count) break;
+            if (node.entity_id[lane] != BVH_INVALID_NODE) {
+>>>>>>> c308d63 (Helped the rabbits find a home)
                 // Find the corresponding object in our updated AABBs
                 // Since entity_ids may not be in order, we need to find the right object
                 bool found = false;
@@ -955,7 +967,10 @@ void BVHCollisionSystem::refit_bvh(const float* positions_x, const float* positi
                 }
             }
             object_idx++;
+<<<<<<< HEAD
             if (object_idx >= count) break;
+=======
+>>>>>>> c308d63 (Helped the rabbits find a home)
         }
         if (object_idx >= count) break;
     }
@@ -1066,8 +1081,126 @@ Vec3 GJKSolver::support_scalar(const ConvexShape& shape, const Vec3& direction) 
 }
 
 Vec3 GJKSolver::support_simd(const ConvexShape& shape, const Vec3& direction) {
+<<<<<<< HEAD
     // Для простоты используем скалярную версию, SIMD можно добавить позже
     return shape.support(direction);
+=======
+    // SIMD-optimized support function for convex shapes
+    // For ConvexHull: vectorize dot product computation using 8 vertices at once
+    
+    switch (shape.type) {
+        case ConvexShape::Type::Sphere: {
+            // Sphere support: center + normalized_direction * radius
+            return shape.center + direction.normalized() * shape.sphere().radius;
+        }
+        
+        case ConvexShape::Type::Box: {
+            // Box support with SIMD-optimized matrix multiplication
+            const ConvexShape::BoxShape& box_shape = shape.box();
+            Vec3 d = box_shape.orientation * direction;
+            
+            // Support point in local space
+            __m128 dir_x = _mm_set1_ps(d.x);
+            __m128 dir_y = _mm_set1_ps(d.y);
+            __m128 dir_z = _mm_set1_ps(d.z);
+            __m128 zero = _mm_setzero_ps();
+            
+            // Conditional: d.x > 0 ? he.x : -he.x (using bitwise select)
+            __m128 he_x = _mm_set1_ps(box_shape.half_extents.x);
+            __m128 he_y = _mm_set1_ps(box_shape.half_extents.y);
+            __m128 he_z = _mm_set1_ps(box_shape.half_extents.z);
+            
+            __m128 mask_x = _mm_cmpgt_ps(dir_x, zero);
+            __m128 mask_y = _mm_cmpgt_ps(dir_y, zero);
+            __m128 mask_z = _mm_cmpgt_ps(dir_z, zero);
+            
+            __m128 support_x = _mm_blendv_ps(_mm_neg_ps(he_x), he_x, mask_x);
+            __m128 support_y = _mm_blendv_ps(_mm_neg_ps(he_y), he_y, mask_y);
+            __m128 support_z = _mm_blendv_ps(_mm_neg_ps(he_z), he_z, mask_z);
+            
+            float sx = _mm_cvtss_f32(support_x);
+            float sy = _mm_cvtss_f32(support_y);
+            float sz = _mm_cvtss_f32(support_z);
+            
+            // Transform back to world space
+            Vec3 local_support(sx, sy, sz);
+            Vec3 world_support = box_shape.orientation * local_support;
+            return shape.center + world_support;
+        }
+        
+        case ConvexShape::Type::Capsule: {
+            // Capsule support
+            const ConvexShape::CapsuleShape& capsule_shape = shape.capsule();
+            Vec3 dir_norm = direction.normalized();
+            float proj = dir_norm.dot(capsule_shape.axis.normalized());
+            Vec3 point = capsule_shape.axis * (proj > 0 ? capsule_shape.half_height : -capsule_shape.half_height);
+            return shape.center + point + dir_norm * capsule_shape.radius;
+        }
+        
+        case ConvexShape::Type::ConvexHull: {
+            // ConvexHull support with SIMD dot product (process 8 vertices at once)
+            const ConvexShape::Hull& vertices = shape.hull();
+            if (vertices.empty()) {
+                return shape.center;
+            }
+            
+            // Precompute direction vector as SIMD for multiple dot products
+            __m128 dir_x = _mm_set1_ps(direction.x);
+            __m128 dir_y = _mm_set1_ps(direction.y);
+            __m128 dir_z = _mm_set1_ps(direction.z);
+            
+            int best_idx = 0;
+            float max_dot = vertices[0].dot(direction);
+            
+            // Process vertices in batches of 4 (SSE, since we're doing 3 floats = 12 bytes per vertex)
+            size_t i = 1;
+            alignas(16) float v_x[4], v_y[4], v_z[4];
+            
+            for (; i + 3 < vertices.size(); i += 4) {
+                // Load 4 vertices' coordinates
+                v_x[0] = vertices[i].x;       v_y[0] = vertices[i].y;       v_z[0] = vertices[i].z;
+                v_x[1] = vertices[i+1].x;     v_y[1] = vertices[i+1].y;     v_z[1] = vertices[i+1].z;
+                v_x[2] = vertices[i+2].x;     v_y[2] = vertices[i+2].y;     v_z[2] = vertices[i+2].z;
+                v_x[3] = vertices[i+3].x;     v_y[3] = vertices[i+3].y;     v_z[3] = vertices[i+3].z;
+                
+                __m128 vx = _mm_loadu_ps(v_x);
+                __m128 vy = _mm_loadu_ps(v_y);
+                __m128 vz = _mm_loadu_ps(v_z);
+                
+                // Dot product: dot = vx*dx + vy*dy + vz*dz
+                __m128 dots = _mm_add_ps(
+                    _mm_add_ps(_mm_mul_ps(vx, dir_x), _mm_mul_ps(vy, dir_y)),
+                    _mm_mul_ps(vz, dir_z)
+                );
+                
+                // Extract and compare each dot product
+                alignas(16) float dot_vals[4];
+                _mm_storeu_ps(dot_vals, dots);
+                
+                for (int j = 0; j < 4; ++j) {
+                    if (dot_vals[j] > max_dot) {
+                        max_dot = dot_vals[j];
+                        best_idx = i + j;
+                    }
+                }
+            }
+            
+            // Process remaining vertices scalar
+            for (; i < vertices.size(); ++i) {
+                float dot = vertices[i].dot(direction);
+                if (dot > max_dot) {
+                    max_dot = dot;
+                    best_idx = i;
+                }
+            }
+            
+            return shape.center + vertices[best_idx];
+        }
+        
+        default:
+            return shape.center;
+    }
+>>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 Vec3 GJKSolver::support(const ConvexShape& shape, const Vec3& direction) const {
@@ -1232,6 +1365,7 @@ EPASolver::EPASolver() = default;
 EPASolver::~EPASolver() = default;
 
 bool EPASolver::expand_simplex_simd(EPASimplex& simplex, const GJKSimplex& initial) {
+<<<<<<< HEAD
     // Простая реализация EPA
     // Инициализируем тетраэдр из симплекса GJK
     if (initial.point_count != 4) return false;
@@ -1257,6 +1391,87 @@ bool EPASolver::expand_simplex_simd(EPASimplex& simplex, const GJKSimplex& initi
     }
     
     simplex.closest_distance = 0.1f; // Заглушка
+=======
+    // EPA (Expanding Polytope Algorithm) to find minimum separation vector
+    // Takes the contact simplex from GJK and expands it to find the closest features
+    
+    if (initial.point_count < 4) {
+        return false;  // Need at least a tetrahedron
+    }
+    
+    // Initialize polytope from GJK simplex
+    simplex.vertex_count = initial.point_count;
+    simplex.face_count = 0;
+    
+    // Copy vertices from GJK output
+    for (int i = 0; i < initial.point_count && i < 16; ++i) {
+        alignas(32) float point_data[8];
+        _mm256_storeu_ps(point_data, initial.points[i]);
+        simplex.vertices[i] = Vec3(point_data[0], point_data[1], point_data[2]);
+    }
+    
+    // Build initial faces from tetrahedron (4 triangular faces)
+    if (simplex.vertex_count == 4) {
+        // Face 0: vertices 0,1,2
+        simplex.faces[0][0] = 0; simplex.faces[0][1] = 1; simplex.faces[0][2] = 2;
+        // Face 1: vertices 0,1,3
+        simplex.faces[1][0] = 0; simplex.faces[1][1] = 1; simplex.faces[1][2] = 3;
+        // Face 2: vertices 0,2,3
+        simplex.faces[2][0] = 0; simplex.faces[2][1] = 2; simplex.faces[2][2] = 3;
+        // Face 3: vertices 1,2,3
+        simplex.faces[3][0] = 1; simplex.faces[3][1] = 2; simplex.faces[3][2] = 3;
+        simplex.face_count = 4;
+    }
+    
+    // Iteratively expand the polytope (simplified EPA)
+    // In real implementation, would add new vertices and rebuild faces
+    const int max_iterations = 32;
+    float min_distance = 1e6f;
+    
+    for (int iter = 0; iter < max_iterations && simplex.face_count > 0; ++iter) {
+        // Find closest face to origin
+        int closest_face = -1;
+        min_distance = 1e6f;
+        Vec3 closest_normal;
+        
+        for (int f = 0; f < simplex.face_count; ++f) {
+            uint8_t i0 = simplex.faces[f][0];
+            uint8_t i1 = simplex.faces[f][1];
+            uint8_t i2 = simplex.faces[f][2];
+            
+            if (i0 >= simplex.vertex_count || i1 >= simplex.vertex_count || i2 >= simplex.vertex_count) {
+                continue;
+            }
+            
+            Vec3 v0 = simplex.vertices[i0];
+            Vec3 v1 = simplex.vertices[i1];
+            Vec3 v2 = simplex.vertices[i2];
+            
+            // Calculate face normal
+            Vec3 edge1 = v1 - v0;
+            Vec3 edge2 = v2 - v0;
+            Vec3 normal = edge1.cross(edge2).normalized();
+            
+            // Distance from origin to face
+            float distance = std::abs(normal.dot(v0));
+            
+            if (distance < min_distance) {
+                min_distance = distance;
+                closest_face = f;
+                closest_normal = normal;
+            }
+        }
+        
+        if (closest_face < 0) break;
+        
+        // Store the closest distance (penetration depth)
+        simplex.closest_distance = min_distance;
+    }
+    
+    // Set final penetration estimate
+    simplex.closest_distance = std::max(0.0f, min_distance);
+    
+>>>>>>> c308d63 (Helped the rabbits find a home)
     return true;
 }
 
@@ -1334,14 +1549,21 @@ Vec3 CCDSolver::compute_contact_point(const PhysicsBody& a, const PhysicsBody& b
 
 std::vector<CCDContact> CCDSolver::query_ccd(
     std::span<const PhysicsBody> fast_bodies,
+<<<<<<< HEAD
     const BVH& world_bvh,
+=======
+>>>>>>> c308d63 (Helped the rabbits find a home)
     float dt,
     uint64_t frame_seed) 
 {
     std::vector<CCDContact> contacts;
     contacts.reserve(fast_bodies.size() * 4);  // preallocate
     
+<<<<<<< HEAD
     // Обработка в детерминированном порядке (по EntityId)
+=======
+    // Obey deterministic order for consistent results
+>>>>>>> c308d63 (Helped the rabbits find a home)
     std::vector<size_t> sorted_indices(fast_bodies.size());
     for (size_t i = 0; i < fast_bodies.size(); ++i) {
         sorted_indices[i] = i;
@@ -1351,6 +1573,7 @@ std::vector<CCDContact> CCDSolver::query_ccd(
             return fast_bodies[a].entity_id < fast_bodies[b].entity_id;
         });
     
+<<<<<<< HEAD
     for (size_t idx : sorted_indices) {
         const auto& body = fast_bodies[idx];
         if (body.velocity.magnitude() < 100.0f) continue;
@@ -1385,13 +1608,97 @@ std::vector<CCDContact> CCDSolver::query_ccd(
                     .normal = compute_contact_normal(body, dummy_b),
                     .point = compute_contact_point(body, dummy_b, toi.value()),
                     .penetration = 0.0f
+=======
+    // Process each fast-moving body
+    for (size_t idx : sorted_indices) {
+        const auto& body = fast_bodies[idx];
+        float velocity_magnitude = body.velocity.magnitude();
+        
+        // Skip slow objects
+        if (velocity_magnitude < 10.0f) continue;
+        
+        // Build swept capsule for this frame
+        float swept_radius = compute_swept_radius(body, velocity_magnitude);
+        Vec3 swept_start = body.position;
+        Vec3 swept_end = body.position + body.velocity * dt;
+        
+        // Determine candidates for collision using spatial heuristics
+        // In a real system, would query BVH tree here
+        // For now, use distance-based candidate generation
+        std::vector<size_t> candidates;
+        
+        float max_sweep_distance = (swept_end - swept_start).magnitude() + swept_radius * 2.0f;
+        
+        for (size_t other_idx = 0; other_idx < fast_bodies.size(); ++other_idx) {
+            if (other_idx == idx) continue;
+            
+            const auto& other = fast_bodies[other_idx];
+            
+            // Quick AABB distance check
+            Vec3 delta = other.position - body.position;
+            float distance = delta.magnitude();
+            
+            if (distance < max_sweep_distance + other.bounding_radius) {
+                candidates.push_back(other_idx);
+            }
+        }
+        
+        // Test each candidate for CCD
+        for (size_t candidate_idx : candidates) {
+            const auto& candidate = fast_bodies[candidate_idx];
+            
+            // Compute time of impact using continuous collision detection
+            auto toi_opt = compute_toi_conservative(body, candidate, dt);
+            
+            if (toi_opt.has_value()) {
+                float toi = toi_opt.value();
+                
+                // Compute contact point and normal at time of impact
+                Vec3 contact_normal = compute_contact_normal(body, candidate);
+                Vec3 contact_point = compute_contact_point(body, candidate, toi);
+                
+                // Calculate penetration distance (how much overlap there would be)
+                float penetration = 0.0f;
+                {
+                    // Estimate penetration from bounding radius overlap
+                    Vec3 pos_a_at_impact = body.position + body.velocity * toi;
+                    Vec3 pos_b_at_impact = candidate.position + candidate.velocity * toi;
+                    Vec3 delta_at_impact = pos_b_at_impact - pos_a_at_impact;
+                    float distance_at_impact = delta_at_impact.magnitude();
+                    float sum_radii = body.bounding_radius + candidate.bounding_radius;
+                    penetration = std::max(0.0f, sum_radii - distance_at_impact);
+                }
+                
+                // Add contact with full information
+                contacts.push_back(CCDContact{
+                    .body_a = body.entity_id,
+                    .body_b = candidate.entity_id,
+                    .toi = toi,
+                    .normal = contact_normal,
+                    .point = contact_point,
+                    .penetration = penetration
+>>>>>>> c308d63 (Helped the rabbits find a home)
                 });
             }
         }
     }
     
+<<<<<<< HEAD
     // Сортировка контактов по приоритету (детерминированно)
     std::sort(contacts.begin(), contacts.end());
+=======
+    // Sort contacts deterministically by (toi, entity_id pair) for consistent processing
+    std::sort(contacts.begin(), contacts.end(),
+        [](const CCDContact& a, const CCDContact& b) {
+            if (std::abs(a.toi - b.toi) > 1e-6f) {
+                return a.toi < b.toi;  // Earlier TOI first
+            }
+            if (a.body_a != b.body_a) {
+                return a.body_a < b.body_a;
+            }
+            return a.body_b < b.body_b;
+        });
+>>>>>>> c308d63 (Helped the rabbits find a home)
     
     return contacts;
 }
@@ -1492,13 +1799,21 @@ void CollisionSystem::collect_broadphase_pairs() {
         motion.end_pos = motion.start_pos;
         float r = shape.type == CollisionShapeType::Sphere ? shape.radius : static_cast<float>(std::max({shape.half_extents.x, shape.half_extents.y, shape.half_extents.z}));
         motion.swept_aabb = _mm256_set_ps(0.0f,
+<<<<<<< HEAD
+=======
+            0.0f,
+>>>>>>> c308d63 (Helped the rabbits find a home)
             static_cast<float>(shape.center.z + r),
             static_cast<float>(shape.center.y + r),
             static_cast<float>(shape.center.x + r),
             static_cast<float>(shape.center.z - r),
             static_cast<float>(shape.center.y - r),
+<<<<<<< HEAD
             static_cast<float>(shape.center.x - r),
             0.0f
+=======
+            static_cast<float>(shape.center.x - r)
+>>>>>>> c308d63 (Helped the rabbits find a home)
         );
         motion.movement_time = 0.0f;
         motions.push_back(motion);

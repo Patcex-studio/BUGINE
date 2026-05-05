@@ -18,6 +18,10 @@
 */
 #include "physics_core/constraint_system.h"
 #include "physics_core/matter_systems.h"
+<<<<<<< HEAD
+=======
+#include "physics_core/simd_config.h"
+>>>>>>> c308d63 (Helped the rabbits find a home)
 #include <cmath>
 
 namespace physics_core {
@@ -223,6 +227,7 @@ void ConstraintSolver::solve_batch(size_t start, size_t count, float dt, RigidBo
 
 #ifdef __AVX2__
 void ConstraintSolver::solve_batch_simd(size_t start, size_t count, float dt, RigidBodySystem& rigid_body_system) {
+<<<<<<< HEAD
     // Load constraint data into SIMD registers
     __m256 target_dist = _mm256_load_ps(&target_distance_[start]);
     __m256 compliance = _mm256_load_ps(&compliance_[start]);
@@ -279,6 +284,137 @@ void ConstraintSolver::solve_batch_simd(size_t start, size_t count, float dt, Ri
         
         if (type_[idx] == ConstraintType::HINGE) {
             enforce_hinge(bodyA, bodyB, idx);
+=======
+    // Fetch bodies - we can't avoid individual lookups, but we vectorize the math
+    alignas(32) PhysicsBody* bodies_a[BATCH_SIZE];
+    alignas(32) PhysicsBody* bodies_b[BATCH_SIZE];
+    alignas(32) Vec3 anchor_world_a[BATCH_SIZE];
+    alignas(32) Vec3 anchor_world_b[BATCH_SIZE];
+    alignas(32) float inv_mass_a[BATCH_SIZE];
+    alignas(32) float inv_mass_b[BATCH_SIZE];
+    
+    // Load body pointers and compute world anchors (serial, but required)
+    for (size_t i = 0; i < count; ++i) {
+        size_t idx = start + i;
+        bodies_a[i] = get_body(rigid_body_system, body_a_[idx]);
+        bodies_b[i] = get_body(rigid_body_system, body_b_[idx]);
+        
+        if (!bodies_a[i] || !bodies_b[i]) {
+            bodies_a[i] = nullptr;
+            bodies_b[i] = nullptr;
+            inv_mass_a[i] = 0.0f;
+            inv_mass_b[i] = 0.0f;
+            anchor_world_a[i] = Vec3(0.0f, 0.0f, 0.0f);
+            anchor_world_b[i] = Vec3(0.0f, 0.0f, 0.0f);
+            continue;
+        }
+        
+        // Transform local anchors to world space
+        Vec3 local_a(anchor_a_x_[idx], anchor_a_y_[idx], anchor_a_z_[idx]);
+        Vec3 local_b(anchor_b_x_[idx], anchor_b_y_[idx], anchor_b_z_[idx]);
+        
+        anchor_world_a[i] = bodies_a[i]->position + bodies_a[i]->orientation * local_a;
+        anchor_world_b[i] = bodies_b[i]->position + bodies_b[i]->orientation * local_b;
+        
+        inv_mass_a[i] = bodies_a[i]->inv_mass;
+        inv_mass_b[i] = bodies_b[i]->inv_mass;
+    }
+    
+    // Now vectorize the constraint solving using SIMD
+    // Load constraint parameters
+    __m256 target_dist = _mm256_loadu_ps(&target_distance_[start]);
+    __m256 compliance = _mm256_loadu_ps(&compliance_[start]);
+    
+    // Compute deltas (B - A)
+    alignas(32) float delta_x[BATCH_SIZE];
+    alignas(32) float delta_y[BATCH_SIZE];
+    alignas(32) float delta_z[BATCH_SIZE];
+    for (size_t i = 0; i < count; ++i) {
+        delta_x[i] = anchor_world_b[i].x - anchor_world_a[i].x;
+        delta_y[i] = anchor_world_b[i].y - anchor_world_a[i].y;
+        delta_z[i] = anchor_world_b[i].z - anchor_world_a[i].z;
+    }
+    
+    __m256 dx = _mm256_loadu_ps(delta_x);
+    __m256 dy = _mm256_loadu_ps(delta_y);
+    __m256 dz = _mm256_loadu_ps(delta_z);
+    
+    // Compute distance: sqrt(dx² + dy² + dz²)
+    __m256 dist_sq = _mm256_add_ps(
+        _mm256_add_ps(_mm256_mul_ps(dx, dx), _mm256_mul_ps(dy, dy)),
+        _mm256_mul_ps(dz, dz)
+    );
+    
+    // Avoid division by zero
+    __m256 epsilon = _mm256_set1_ps(1e-6f);
+    __m256 dist = _mm256_sqrt_ps(_mm256_max_ps(dist_sq, epsilon));
+    
+    // Normal = delta / distance (unit vector)
+    __m256 inv_dist = _mm256_div_ps(_mm256_set1_ps(1.0f), dist);
+    __m256 normal_x = _mm256_mul_ps(dx, inv_dist);
+    __m256 normal_y = _mm256_mul_ps(dy, inv_dist);
+    __m256 normal_z = _mm256_mul_ps(dz, inv_dist);
+    
+    // Constraint error = distance - target_distance
+    __m256 constraint_error = _mm256_sub_ps(dist, target_dist);
+    
+    // Store errors back
+    _mm256_storeu_ps(&error_[start], constraint_error);
+    
+    // Load inverse masses
+    __m256 inv_mass_a_vec = _mm256_loadu_ps(inv_mass_a);
+    __m256 inv_mass_b_vec = _mm256_loadu_ps(inv_mass_b);
+    __m256 inv_mass_sum = _mm256_add_ps(inv_mass_a_vec, inv_mass_b_vec);
+    
+    // Effective mass = 1.0 / (inv_mass_a + inv_mass_b + compliance)
+    __m256 effective_mass = _mm256_add_ps(inv_mass_sum, compliance);
+    effective_mass = _mm256_add_ps(effective_mass, epsilon); // Avoid division by zero
+    __m256 inv_effective_mass = _mm256_div_ps(_mm256_set1_ps(1.0f), effective_mass);
+    
+    // Lambda = -error / effective_mass
+    __m256 lambda = _mm256_mul_ps(_mm256_mul_ps(constraint_error, _mm256_set1_ps(-1.0f)), inv_effective_mass);
+    
+    // Impulse = normal * lambda
+    __m256 impulse_x = _mm256_mul_ps(normal_x, lambda);
+    __m256 impulse_y = _mm256_mul_ps(normal_y, lambda);
+    __m256 impulse_z = _mm256_mul_ps(normal_z, lambda);
+    
+    // Accumulate lambda for warm starting
+    __m256 lambda_x = _mm256_loadu_ps(&lambda_x_[start]);
+    __m256 lambda_y = _mm256_loadu_ps(&lambda_y_[start]);
+    __m256 lambda_z = _mm256_loadu_ps(&lambda_z_[start]);
+    
+    lambda_x = _mm256_add_ps(lambda_x, impulse_x);
+    lambda_y = _mm256_add_ps(lambda_y, impulse_y);
+    lambda_z = _mm256_add_ps(lambda_z, impulse_z);
+    
+    _mm256_storeu_ps(&lambda_x_[start], lambda_x);
+    _mm256_storeu_ps(&lambda_y_[start], lambda_y);
+    _mm256_storeu_ps(&lambda_z_[start], lambda_z);
+    
+    // Apply impulses to bodies (serial due to write conflicts)
+    for (size_t i = 0; i < count; ++i) {
+        size_t idx = start + i;
+        if (!bodies_a[i] || !bodies_b[i]) continue;
+        
+        // Get scalar values from the vectors
+        alignas(32) float imp_x[BATCH_SIZE], imp_y[BATCH_SIZE], imp_z[BATCH_SIZE];
+        _mm256_storeu_ps(imp_x, impulse_x);
+        _mm256_storeu_ps(imp_y, impulse_y);
+        _mm256_storeu_ps(imp_z, impulse_z);
+        
+        Vec3 impulse(imp_x[i], imp_y[i], imp_z[i]);
+        
+        if (bodies_a[i]->inv_mass > 0.0f) {
+            bodies_a[i]->velocity = bodies_a[i]->velocity + impulse * bodies_a[i]->inv_mass;
+        }
+        if (bodies_b[i]->inv_mass > 0.0f) {
+            bodies_b[i]->velocity = bodies_b[i]->velocity - impulse * bodies_b[i]->inv_mass;
+        }
+        
+        if (type_[idx] == ConstraintType::HINGE) {
+            enforce_hinge(bodies_a[i], bodies_b[i], idx);
+>>>>>>> c308d63 (Helped the rabbits find a home)
         }
     }
 }

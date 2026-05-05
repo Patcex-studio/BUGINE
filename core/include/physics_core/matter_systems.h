@@ -120,6 +120,16 @@ public:
     void apply_impulse(EntityID id, const Vec3& impulse, const Vec3& point);
 
     /**
+<<<<<<< HEAD
+=======
+     * Apply torque to a body
+     * @param id Body ID
+     * @param torque Torque vector (N*m)
+     */
+    void apply_torque(EntityID id, const Vec3& torque);
+
+    /**
+>>>>>>> c308d63 (Helped the rabbits find a home)
      * Set gravity for all bodies
      * @param gravity Acceleration due to gravity
      */
@@ -177,7 +187,11 @@ public:
     EntityID add_body(const PhysicsBody& body) override;
     void remove_body(EntityID id) override;
     PhysicsBody* get_body(EntityID id) override;
+<<<<<<< HEAD
     size_t get_body_count() const override { return sph_system_->get_particles().size(); }
+=======
+    size_t get_body_count() const override { return dummy_bodies_.size(); }
+>>>>>>> c308d63 (Helped the rabbits find a home)
     const std::vector<PhysicsBody>& get_all_bodies() const override { return dummy_bodies_; }
     const char* name() const override { return "FluidSystem"; }
 

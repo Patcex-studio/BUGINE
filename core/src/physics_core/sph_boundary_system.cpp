@@ -17,6 +17,10 @@
  SPDX-License-Identifier: AGPL-3.0 OR Commercial
 */
 #include "physics_core/sph_boundary_system.h"
+<<<<<<< HEAD
+=======
+#include "physics_core/physics_core.h"
+>>>>>>> c308d63 (Helped the rabbits find a home)
 #include <cmath>
 #include <algorithm>
 
@@ -148,6 +152,19 @@ Vec3 SPHBoundarySystem::get_and_clear_body_force(uint32_t body_id)
     return Vec3{0.0f, 0.0f, 0.0f};
 }
 
+<<<<<<< HEAD
+=======
+void SPHBoundarySystem::apply_accumulated_body_forces(PhysicsCore& physics)
+{
+    for (auto& kv : body_force_accum_) {
+        if (kv.second != Vec3{0.0f, 0.0f, 0.0f}) {
+            physics.apply_force(static_cast<EntityID>(kv.first), kv.second);
+            kv.second = Vec3{0.0f, 0.0f, 0.0f};
+        }
+    }
+}
+
+>>>>>>> c308d63 (Helped the rabbits find a home)
 Vec3 SPHBoundarySystem::get_and_clear_body_impulse(uint32_t body_id)
 {
     auto it = body_impulse_accum_.find(body_id);

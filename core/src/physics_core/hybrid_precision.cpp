@@ -129,6 +129,7 @@ void HybridPrecisionSystem::apply_pending_shift() {
     uint64_t active_ver = active_origin_.version.load(std::memory_order_relaxed);
     
     if (pending_ver != active_ver) {
+<<<<<<< HEAD
         // Копируем origin
         active_origin_.origin = pending_origin_.origin;
         // Атомарно обновляем версию
@@ -136,6 +137,46 @@ void HybridPrecisionSystem::apply_pending_shift() {
         
         // Здесь можно добавить двойную буферизацию локальных координат
         // Для простоты пропустим
+=======
+        // Store old origin for offset calculation
+        Vec3 old_origin = active_origin_.origin;
+        
+        // Apply new origin
+        active_origin_.origin = pending_origin_.origin;
+        
+        // Calculate offset to apply to all local bodies
+        Vec3 offset = active_origin_.origin - old_origin;
+        
+        // Atomically update version
+        active_origin_.version.store(pending_ver, std::memory_order_release);
+        
+        // Shift all global objects by offset
+        {
+            std::unique_lock<std::shared_mutex> lock(global_objects_mutex_);
+            for (auto& [id, obj] : global_objects_) {
+                // Update global position by subtracting offset (origin moved, so local coords appear shifted back)
+                obj.position -= offset;
+                
+                // Mark as needing resync to local frame
+                {
+                    std::unique_lock<std::shared_mutex> local_lock(local_objects_mutex_);
+                    if (local_object_cache_.count(id)) {
+                        local_object_cache_[id].needs_update = true;
+                    }
+                }
+            }
+        }
+        
+        // Shift all projectiles
+        {
+            std::unique_lock<std::shared_mutex> lock(projectiles_mutex_);
+            for (auto& proj : projectiles_) {
+                proj.position -= offset;
+            }
+        }
+        
+        total_syncs_++;
+>>>>>>> c308d63 (Helped the rabbits find a home)
     }
 }
 

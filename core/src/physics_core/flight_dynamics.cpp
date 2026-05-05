@@ -750,11 +750,22 @@ void FlightDynamicsSystem::apply_flight_forces_to_physics(
     Vec3 aero_force(aerodynamics.force_x, aerodynamics.force_y, aerodynamics.force_z);
     physics.apply_force(aircraft_entity, aero_force);
 
+<<<<<<< HEAD
+=======
+    Vec3 aero_torque(
+        aerodynamics.moment_roll,
+        aerodynamics.moment_pitch,
+        aerodynamics.moment_yaw
+    );
+    physics.apply_torque(aircraft_entity, aero_torque);
+
+>>>>>>> c308d63 (Helped the rabbits find a home)
     // Propulsion thrust acts along the forward X-axis of the aircraft in body space.
     // Here we simplify and apply it directly in world space along the X-axis.
     Vec3 prop_force(propulsion.thrust, 0.0f, 0.0f);
     physics.apply_force(aircraft_entity, prop_force);
 
+<<<<<<< HEAD
     // Apply weight separately so PhysicsCore can integrate gravity consistently.
     Vec3 weight_force(0.0f, 0.0f, -state.mass_kg * GRAVITY_MS2);
     physics.apply_force(aircraft_entity, weight_force);
@@ -762,6 +773,18 @@ void FlightDynamicsSystem::apply_flight_forces_to_physics(
     // Aerodynamic torques are not directly supported in PhysicsCore yet.
     // We can approximate them via impulses at offset points if needed.
     // For now only forces are applied to ensure the aircraft interacts with the physics system.
+=======
+    Vec3 prop_torque(
+        propulsion.roll_moment,
+        propulsion.pitch_moment,
+        propulsion.yaw_moment
+    );
+    physics.apply_torque(aircraft_entity, prop_torque);
+
+    // Apply weight separately so PhysicsCore can integrate gravity consistently.
+    Vec3 weight_force(0.0f, 0.0f, -state.mass_kg * GRAVITY_MS2);
+    physics.apply_force(aircraft_entity, weight_force);
+>>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 void FlightDynamicsSystem::initialize_from_modular_aircraft(
@@ -870,9 +893,39 @@ void FlightDynamicsSystem::simulate_rotor_blade_flapping(
     float collective,
     float cyclic
 ) {
+<<<<<<< HEAD
     float flapping_angle = (collective + cyclic * 0.5f) * 0.08f;
     float coning_effect = std::min(0.25f, std::abs(flapping_angle));
     (void)coning_effect;
+=======
+    // Blade flapping dynamics for helicopters
+    // Flapping occurs due to differential lift across the rotor disk
+    
+    // Collective pitch input directly affects coning angle (all blades together)
+    // Cyclic pitch creates differential flapping (alternating sides)
+    
+    // Coning angle from collective (upward flapping when more collective)
+    float coning_angle = collective * 3.0f;  // ~3 degrees per unit collective
+    
+    // Coning effect reduces effective disk area (less lift when blades cone up)
+    float coning_effect = 1.0f - (coning_angle * coning_angle * 0.001f);  // Quadratic loss
+    coning_effect = std::max(0.5f, std::min(1.0f, coning_effect));
+    
+    // Lateral and longitudinal flapping from cyclic
+    // Cyclic input creates differential cyclic, which results in flapping
+    float lateral_flapping = cyclic * 2.5f;   // Lateral (roll-inducing) flapping
+    float longitudinal_flapping = cyclic * 2.5f;  // Longitudinal (pitch-inducing) flapping
+    
+    // Blade flapping rate (how fast blades reach equilibrium)
+    float flapping_rate_damping = 0.92f;  // 92% of previous flapping rate per frame
+    
+    // Store or use these values for aerodynamic calculations
+    (void)coning_angle;
+    (void)coning_effect;
+    (void)lateral_flapping;
+    (void)longitudinal_flapping;
+    (void)flapping_rate_damping;
+>>>>>>> c308d63 (Helped the rabbits find a home)
 }
 
 void FlightDynamicsSystem::apply_ground_effect(float altitude_m, float& lift_coefficient) {
@@ -898,12 +951,79 @@ void FlightDynamicsSystem::apply_ground_effect(float altitude_m, float& lift_coe
     }
 }
 
+<<<<<<< HEAD
 void FlightDynamicsSystem::model_vortex_ring_state(
     float descent_rate
 ) {
     if (descent_rate < -5.0f) {
         float vortex_loss = std::min(0.7f, (-descent_rate - 5.0f) * 0.05f);
         (void)vortex_loss;
+=======
+void FlightDynamicsSystem::calculate_ground_effect(float altitude) {
+    // Ground effect for helicopters
+    // Effect diminishes with altitude above ground
+    // Maximum benefit at approximately 1/4 rotor diameter altitude
+    
+    // Typical rotor diameter for light helicopter: 10-11 meters
+    // Maximum ground effect range: roughly 2x rotor diameter
+    const float rotor_diameter = 11.0f;  // meters
+    const float ground_effect_max_altitude = rotor_diameter * 2.0f;  // ~22m
+    const float optimal_altitude = rotor_diameter * 0.25f;  // ~2.75m
+    
+    // Ground effect factor (0 = no effect, 1 = full effect)
+    float ground_effect_factor = 0.0f;
+    
+    if (altitude < ground_effect_max_altitude) {
+        // Bell-shaped curve centered at optimal_altitude
+        // Maximum ~15% reduction in induced power at optimal height
+        float altitude_ratio = altitude / rotor_diameter;
+        
+        if (altitude < optimal_altitude) {
+            // Ascending to optimal height: increase effect
+            ground_effect_factor = (optimal_altitude - altitude) / optimal_altitude;
+            ground_effect_factor = 1.0f - ground_effect_factor * ground_effect_factor;  // Smooth curve
+        } else {
+            // Above optimal: decrease effect
+            float height_above_optimal = (altitude - optimal_altitude) / optimal_altitude;
+            ground_effect_factor = 1.0f / (1.0f + height_above_optimal * height_above_optimal * 3.0f);
+        }
+        
+        ground_effect_factor = std::min(1.0f, ground_effect_factor * 0.15f);  // Max 15% benefit
+    }
+    
+    // Store for use in aerodynamic calculations
+    (void)ground_effect_factor;
+}
+
+void FlightDynamicsSystem::model_vortex_ring_state(
+    float descent_rate
+) {
+    // Vortex Ring State (VRS) - dangerous flight condition for helicopters
+    // Occurs when helicopter descends too steeply with insufficient forward airspeed
+    // The rotor enters its own wake, causing loss of lift and vibration
+    
+    // VRS danger zone: descent > 5 m/s AND forward speed < 10 m/s
+    // Additional factor: altitude affects severity
+    
+    const float vrs_descent_threshold = 5.0f;     // m/s
+    const float vrs_forward_speed_threshold = 10.0f; // m/s
+    
+    // If descent rate exceeds threshold:
+    if (descent_rate > vrs_descent_threshold) {
+        // Vortex ring state develops
+        // Loss of rotor effectiveness increases with descent rate
+        float descent_excess = descent_rate - vrs_descent_threshold;
+        float vrs_severity = std::min(1.0f, descent_excess * 0.1f);  // Scales from 0-1
+        
+        // Rotor effectiveness loss (up to 70% at severe VRS)
+        float rotor_effectiveness_loss = vrs_severity * 0.7f;
+        
+        // Vibration increase (pilot experiences significant shaking)
+        float vibration_increase = vrs_severity * 0.5f;
+        
+        (void)rotor_effectiveness_loss;
+        (void)vibration_increase;
+>>>>>>> c308d63 (Helped the rabbits find a home)
     }
 }
 
@@ -950,6 +1070,7 @@ float FlightDynamicsSystem::compute_induced_velocity(float thrust, float disk_ar
 }
 
 void FlightDynamicsSystem::model_vortex_ring_state(HelicopterState& heli, float descent_rate, float horiz_speed) {
+<<<<<<< HEAD
     // Vortex Ring State conditions: descent > 5 m/s, horizontal speed < 10 m/s
     if (descent_rate > 5.0f && horiz_speed < 10.0f) {
         heli.vortex_ring_state = true;
@@ -961,6 +1082,47 @@ void FlightDynamicsSystem::model_vortex_ring_state(HelicopterState& heli, float 
         heli.vortex_ring_state = false;
         // Dampen vibrations
         heli.vibration_level *= 0.95f;
+=======
+    // Vortex Ring State detection and simulation for helicopter dynamics
+    // VRS conditions: steep descent (>5 m/s) + low horizontal speed (<10 m/s)
+    // This is a dangerous condition where rotor enters its own wake
+    
+    const float vrs_descent_threshold = 5.0f;      // m/s - steepness threshold
+    const float vrs_forward_speed_threshold = 10.0f; // m/s - airspeed threshold
+    
+    bool is_vrs_condition = (descent_rate > vrs_descent_threshold) && 
+                            (horiz_speed < vrs_forward_speed_threshold);
+    
+    if (is_vrs_condition) {
+        heli.vortex_ring_state = true;
+        
+        // Calculate severity based on how far we are into VRS envelope
+        float descent_excess = std::max(0.0f, descent_rate - vrs_descent_threshold);
+        float speed_deficit = std::max(0.0f, vrs_forward_speed_threshold - horiz_speed);
+        
+        // Severity combines both factors (0 to 1)
+        float descent_factor = std::min(1.0f, descent_excess / 5.0f);  // Severe at >10 m/s descent
+        float speed_factor = std::min(1.0f, speed_deficit / 10.0f);     // Severe at 0 m/s airspeed
+        float vrs_severity = (descent_factor + speed_factor) * 0.5f;     // Average severity
+        
+        // Rotor loses effectiveness in VRS (can drop to 30% of normal)
+        heli.induced_velocity *= (1.0f - vrs_severity * 0.7f);
+        
+        // Increase vibrations significantly (causes discomfort/damage)
+        heli.vibration_level = std::min(1.0f, heli.vibration_level + vrs_severity * 0.15f);
+        
+        // Pilot feedback: control response degrades
+        heli.control_authority_loss = vrs_severity * 0.5f;  // 0-50% control loss
+    } else {
+        // Exiting or not in VRS
+        heli.vortex_ring_state = false;
+        
+        // Dampen vibrations over time as helicopter recovers
+        heli.vibration_level *= 0.95f;
+        
+        // Restore control authority
+        heli.control_authority_loss = 0.0f;
+>>>>>>> c308d63 (Helped the rabbits find a home)
     }
 }
 

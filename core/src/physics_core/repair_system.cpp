@@ -116,8 +116,39 @@ bool RepairSystem::start_repair_operation(const RepairOperation& operation) {
     repair_state->required_parts = operation.required_parts;
     repair_state->required_tools = operation.required_tools;
     
+<<<<<<< HEAD
     // Check tools availability (simplified - would check ToolInventory of repair unit)
     repair_state->has_required_tools = true; // Assume tools are available for now
+=======
+    // Check tools availability - verify repair unit has all required tools
+    repair_state->has_required_tools = true;  // Optimistic start
+    
+    // Verify each tool type is available in the repair unit
+    // Tools include: welders, hydraulic presses, electronic testers, etc.
+    for (const auto& tool : operation.required_tools) {
+        // Query tool inventory/availability
+        // This would typically check if repair_unit_entity has tool with id=tool.tool_id
+        // For now, implement a check with simple heuristics
+        
+        bool tool_available = false;
+        
+        // Tool availability check (would normally query a ToolInventory system)
+        if (tool.tool_id == 1) {  // Welding equipment
+            tool_available = true;  // Assume all repair units have basic welding
+        } else if (tool.tool_id == 2) {  // Hydraulic press
+            tool_available = true;  // Standard heavy equipment
+        } else if (tool.tool_id == 3) {  // Electronic tester
+            tool_available = true;  // Standard diagnostics
+        } else if (tool.tool_id >= 100) {  // Specialized tools - may not be available
+            tool_available = false;  // More restrictive for specialized equipment
+        }
+        
+        if (!tool_available) {
+            repair_state->has_required_tools = false;
+            break;
+        }
+    }
+>>>>>>> c308d63 (Helped the rabbits find a home)
     
     if (!repair_state->has_required_parts || !repair_state->has_required_tools) {
         return false; // Cannot start repair without parts/tools
