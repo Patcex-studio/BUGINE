@@ -398,7 +398,6 @@ void BallisticsSystem::calculate_penetration_batch(
     alignas(32) float hardness[8];
     alignas(32) float spall_coeff[8];
     alignas(32) float projectile_type[8]; // 0=APFSDS, 1=HEAT, 2=HESH, 3=other
-    alignas(32) float projectile_type[8];
     // New: projectile-specific parameters
     alignas(32) float proj_mass[8];
     alignas(32) float proj_caliber[8];
@@ -421,11 +420,6 @@ void BallisticsSystem::calculate_penetration_batch(
             hardness[j] = mat.hardness_rha;
             spall_coeff[j] = mat.spall_coefficient;
             projectile_type[j] = static_cast<float>(projectiles[idx].projectile_type);
-        }
-
-        // Fill remaining slots with defaults for SIMD processing
-            
-            // Extract projectile parameters
             proj_mass[j] = projectiles[idx].mass;
             proj_caliber[j] = projectiles[idx].caliber;
             proj_length[j] = projectiles[idx].penetrator_length;
@@ -466,6 +460,13 @@ void BallisticsSystem::calculate_penetration_batch(
         alignas(32) float depth[8];
         alignas(32) float residual_energy[8];
 
+        // Initialize output arrays for this batch
+        for (size_t j = 0; j < 8; ++j) {
+            penetrated_mask[j] = 0.0f;
+            depth[j] = 0.0f;
+            residual_energy[j] = 0.0f;
+        }
+
         // Process APFSDS projectiles (type == 0)
         __m256 apfsds_mask = _mm256_cmp_ps(type_v, _mm256_set1_ps(0.0f), _CMP_EQ_OQ);
         if (_mm256_movemask_ps(apfsds_mask) != 0) {
@@ -487,30 +488,6 @@ void BallisticsSystem::calculate_penetration_batch(
         if (_mm256_movemask_ps(hesh_mask) != 0) {
             calculate_penetration_batch_hesh(
                 vel_v, ang_v, armor_v, hard_v, spall_v, hesh_mask,
-        // Process APFSDS projectiles (type == 3)
-        __m256 apfsds_mask = _mm256_cmp_ps(type_v, _mm256_set1_ps(3.0f), _CMP_EQ_OQ);
-        if (_mm256_movemask_ps(apfsds_mask) != 0) {
-            calculate_penetration_batch_apfsds(
-                vel_v, ang_v, armor_v, hard_v, spall_v, apfsds_mask,
-                mass_v, len_v, cal_v,
-                penetrated_mask, depth, residual_energy);
-        }
-
-        // Process HEAT projectiles (type == 4)
-        __m256 heat_mask = _mm256_cmp_ps(type_v, _mm256_set1_ps(4.0f), _CMP_EQ_OQ);
-        if (_mm256_movemask_ps(heat_mask) != 0) {
-            calculate_penetration_batch_heat(
-                vel_v, ang_v, armor_v, hard_v, spall_v, heat_mask,
-                charge_v,
-                penetrated_mask, depth, residual_energy);
-        }
-
-        // Process HESH projectiles (type == 5)
-        __m256 hesh_mask = _mm256_cmp_ps(type_v, _mm256_set1_ps(5.0f), _CMP_EQ_OQ);
-        if (_mm256_movemask_ps(hesh_mask) != 0) {
-            calculate_penetration_batch_hesh(
-                vel_v, ang_v, armor_v, hard_v, spall_v, hesh_mask,
-                exp_v,
                 penetrated_mask, depth, residual_energy);
         }
 
@@ -534,101 +511,23 @@ void BallisticsSystem::calculate_penetration_batch_apfsds(
     __m256 velocity, __m256 angle, __m256 armor, __m256 hardness, __m256 spall_coeff, __m256 mask,
     float* penetrated_mask, float* depth, float* residual_energy
 ) {
-    // SIMD APFSDS penetration: P = (L/D) * sqrt(mass) * velocity / (K * hardness)
-    __m256 l_over_d = _mm256_set1_ps(10.0f); // Assume L/D ratio
-    __m256 k_factor = _mm256_set1_ps(2400.0f);
-    __m256 mass_sqrt = _mm256_set1_ps(2.0f); // sqrt(4.0f) for 4kg projectile
-
-    // Calculate angle factor (approximation: cos(x) ≈ 1 - x²/2 for small angles)
-    __m256 angle_rad = _mm256_mul_ps(angle, _mm256_set1_ps(3.14159f / 180.0f));
-    __m256 angle_sq = _mm256_mul_ps(angle_rad, angle_rad);
-    __m256 angle_factor = _mm256_sub_ps(_mm256_set1_ps(1.0f), _mm256_mul_ps(angle_sq, _mm256_set1_ps(0.5f)));
-
-    // Penetration capability
-    __m256 penetration = _mm256_div_ps(
-        _mm256_mul_ps(_mm256_mul_ps(l_over_d, mass_sqrt), velocity),
-        _mm256_mul_ps(k_factor, hardness)
-    );
-    penetration = _mm256_mul_ps(penetration, angle_factor);
-    __m256 proj_mass, __m256 proj_length, __m256 proj_caliber,
-    float* penetrated_mask, float* depth, float* residual_energy
-) {
-    // SIMD APFSDS penetration using de Marre formula with realistic projectile parameters
-    // P = (L/D)^(0.6) * sqrt(ρ_p/ρ_a) * (M/A)^(0.5) * V / K
-    // where: L/D = length-to-diameter ratio (from projectile parameters)
-    //        ρ_p/ρ_a = density ratio (tungsten ~15.6/7.85 ≈ 2.0)
-    //        M/A = mass per area (calculated from proj_mass and caliber)
-    //        K = material constant (2.0-2.5 for steel)
-    
-    // Calculate L/D from penetrator length and caliber
-    __m256 l_over_d = _mm256_div_ps(proj_length, proj_caliber);
-    __m256 l_over_d_factor = _mm256_mul_ps(
-        _mm256_pow_ps(l_over_d, _mm256_set1_ps(0.6f)),  // (L/D)^0.6
-        _mm256_rsqrt_ps(_mm256_set1_ps(1.0f))
-    );
-    
-    __m256 density_ratio = _mm256_set1_ps(1.98f); // tungsten/steel density ratio
-    
-    // Calculate mass per area (cross-section from caliber)
-    // A ≈ π*(d/2)² → sqrt(M/A) = sqrt(M) / sqrt(π*(d/2)²)
-    __m256 pi = _mm256_set1_ps(3.141592653589793f);
-    __m256 area = _mm256_mul_ps(
-        pi,
-        _mm256_mul_ps(
-            _mm256_mul_ps(proj_caliber, proj_caliber),
-            _mm256_set1_ps(0.25f)
-        )
-    );
-    __m256 sqrt_mass_over_area = _mm256_div_ps(_mm256_sqrt_ps(proj_mass), _mm256_sqrt_ps(area));
-    __m256 k_factor = _mm256_set1_ps(2.15f); // Material constant for RHA steel
-    
-    // Calculate angle factor using cos(angle) approximation
-    __m256 angle_rad = _mm256_mul_ps(angle, _mm256_div_ps(pi, _mm256_set1_ps(180.0f)));
-    __m256 angle_sq = _mm256_mul_ps(angle_rad, angle_rad);
-    __m256 cos_approx = _mm256_sub_ps(_mm256_set1_ps(1.0f), 
-        _mm256_add_ps(
-            _mm256_mul_ps(angle_sq, _mm256_set1_ps(0.5f)),
-            _mm256_mul_ps(angle_sq, _mm256_mul_ps(angle_sq, _mm256_set1_ps(0.0417f)))
-        )
+    // Simple SIMD APFSDS model: penetration ∝ velocity / hardness
+    __m256 base_penetration = _mm256_div_ps(
+        _mm256_mul_ps(_mm256_set1_ps(10.0f), _mm256_sqrt_ps(velocity)),
+        _mm256_mul_ps(_mm256_set1_ps(1.0f), hardness)
     );
 
-    // Penetration capability: P = (L/D)^0.6 * sqrt(density) * sqrt(M/A) * V * cos(angle) / K
-    __m256 numerator = _mm256_mul_ps(
-        _mm256_mul_ps(
-            _mm256_mul_ps(l_over_d_factor, _mm256_sqrt_ps(density_ratio)),
-            sqrt_mass_over_area
-        ),
-        _mm256_mul_ps(velocity, cos_approx)
-    );
-    __m256 penetration = _mm256_div_ps(numerator, k_factor);
+    __m256 angle_rad = _mm256_mul_ps(angle, _mm256_set1_ps(3.1415927f / 180.0f));
+    __m256 angle_factor = _mm256_sub_ps(_mm256_set1_ps(1.0f), _mm256_mul_ps(angle_rad, angle_rad));
+    angle_factor = _mm256_max_ps(angle_factor, _mm256_set1_ps(0.25f));
 
-    // Compare with armor thickness
+    __m256 penetration = _mm256_mul_ps(base_penetration, angle_factor);
     __m256 penetrated = _mm256_cmp_ps(penetration, armor, _CMP_GE_OQ);
     penetrated = _mm256_and_ps(penetrated, mask);
 
-    // Calculate depth and residual energy
     __m256 calc_depth = _mm256_min_ps(penetration, armor);
-    __m256 calc_residual = _mm256_set1_ps(0.0f);
-    __m256 penetrated_check = _mm256_cmp_ps(penetration, armor, _CMP_GT_OQ);
-    calc_residual = _mm256_blendv_ps(calc_residual, 
-        _mm256_div_ps(_mm256_sub_ps(penetration, armor), penetration), penetrated_check);
+    __m256 calc_residual = _mm256_max_ps(_mm256_sub_ps(penetration, armor), _mm256_set1_ps(0.0f));
 
-    // Store results
-    _mm256_store_ps(penetrated_mask, penetrated);
-    _mm256_store_ps(depth, calc_depth);
-    _mm256_store_ps(residual_energy, calc_residual);
-    // Calculate depth and residual velocity
-    __m256 calc_depth = _mm256_min_ps(penetration, armor);
-    
-    // Residual velocity: V_residual = V_initial * sqrt(max(0, 1 - (armor/penetration)²))
-    __m256 armor_ratio = _mm256_div_ps(armor, _mm256_add_ps(penetration, _mm256_set1_ps(1e-6f)));
-    __m256 one_minus_sq = _mm256_sub_ps(_mm256_set1_ps(1.0f), 
-        _mm256_mul_ps(armor_ratio, armor_ratio)
-    );
-    __m256 residual_factor = _mm256_sqrt_ps(_mm256_max_ps(_mm256_set1_ps(0.0f), one_minus_sq));
-    __m256 calc_residual = _mm256_mul_ps(_mm256_mul_ps(residual_factor, residual_factor), velocity);
-
-    // Store results (mask for non-applicable lanes)
     _mm256_store_ps(penetrated_mask, penetrated);
     _mm256_store_ps(depth, _mm256_blendv_ps(_mm256_set1_ps(0.0f), calc_depth, mask));
     _mm256_store_ps(residual_energy, _mm256_blendv_ps(_mm256_set1_ps(0.0f), calc_residual, mask));
@@ -638,188 +537,53 @@ void BallisticsSystem::calculate_penetration_batch_heat(
     __m256 velocity, __m256 angle, __m256 armor, __m256 hardness, __m256 spall_coeff, __m256 mask,
     float* penetrated_mask, float* depth, float* residual_energy
 ) {
-    // SIMD HEAT penetration: P = K * D^(2/3) / (1 + (S/D)^2)^(1/3)
-    // Simplified: assume D=100mm, S=standoff, K=2.5
+    // Simplified HEAT: penetration depends on charge effectiveness and angle
     __m256 k_factor = _mm256_set1_ps(2.5f);
-    __m256 diameter = _mm256_set1_ps(0.1f); // 100mm
-    __m256 standoff = _mm256_set1_ps(0.2f); // Assume 200mm standoff
+    __m256 charge_diameter = _mm256_set1_ps(0.08f); // 80mm effective charge diameter
+    __m256 standoff = _mm256_set1_ps(0.3f);        // 300mm standoff
 
-    // D^(2/3) ≈ D^0.666
-    __m256 d_power = _mm256_mul_ps(diameter, _mm256_sqrt_ps(diameter)); // Approximation
-
-    // (S/D)^2
-    __m256 s_over_d = _mm256_div_ps(standoff, diameter);
-    __m256 s_over_d_sq = _mm256_mul_ps(s_over_d, s_over_d);
-
-    // 1 + (S/D)^2
-    __m256 denominator = _mm256_add_ps(_mm256_set1_ps(1.0f), s_over_d_sq);
-
-    // (1 + (S/D)^2)^(1/3) ≈ (1 + (S/D)^2)^0.333
-    __m256 denom_power = _mm256_mul_ps(_mm256_sqrt_ps(denominator), 
-                                       _mm256_rsqrt_ps(_mm256_sqrt_ps(denominator))); // Approximation
-
-    // Penetration
-    __m256 penetration = _mm256_div_ps(_mm256_mul_ps(k_factor, d_power), denom_power);
-
-    // Compare with armor
-    __m256 penetrated = _mm256_cmp_ps(penetration, armor, _CMP_GE_OQ);
-    penetrated = _mm256_and_ps(penetrated, mask);
-
-    // Depth and residual (simplified)
-    __m256 charge_diameter,
-    float* penetrated_mask, float* depth, float* residual_energy
-) {
-    // SIMD HEAT penetration using shaped charge formula with projectile-specific charge diameter
-    // P = K * D_charge^(2/3) * (j)^n / (1 + (S/D_charge)^2)^m
-    // where: K ≈ 2.5-3.5, D_charge = charge diameter (from projectile)
-    //        j = jet velocity factor, S = standoff distance, n,m are empirical constants
-    
-    __m256 k_factor = _mm256_set1_ps(3.15f);         // Shaped charge efficiency constant
-    __m256 standoff = _mm256_set1_ps(350.0f);        // Standoff distance (mm)
-    __m256 jet_velocity_factor = _mm256_set1_ps(8.5f); // High-velocity jet (8.5 km/s scale)
-    
-    // D_charge^(2/3) calculation using projectile diameter
-    __m256 d_cbrt = _mm256_pow_ps(charge_diameter, _mm256_set1_ps(0.333333f));  // D^(1/3)
-    __m256 d_power = _mm256_mul_ps(d_cbrt, _mm256_pow_ps(d_cbrt, _mm256_set1_ps(2.0f))); // D^(2/3)
-    
-    // Standoff effect: (S/D)^2
+    __m256 d_power = _mm256_mul_ps(charge_diameter, _mm256_sqrt_ps(charge_diameter));
     __m256 s_over_d = _mm256_div_ps(standoff, _mm256_add_ps(charge_diameter, _mm256_set1_ps(1e-6f)));
-    __m256 s_over_d_sq = _mm256_mul_ps(s_over_d, s_over_d);
-    
-    // (1 + (S/D)^2)^(-2/3) effect
-    __m256 denominator = _mm256_add_ps(_mm256_set1_ps(1.0f), s_over_d_sq);
-    __m256 denom_cbrt = _mm256_pow_ps(denominator, _mm256_set1_ps(0.333333f));
-    __m256 denom_power = _mm256_div_ps(_mm256_set1_ps(1.0f), 
-        _mm256_mul_ps(denom_cbrt, denom_cbrt)
-    );
-    
-    // Penetration: P = K * D^(2/3) * j * (1 + (S/D)^2)^(-2/3)
-    __m256 penetration = _mm256_mul_ps(
-        _mm256_mul_ps(
-            _mm256_mul_ps(k_factor, d_power),
-            jet_velocity_factor
-        ),
-        denom_power
-    );
-    
-    // Apply angle factor (HEAT is more forgiving to angle, but still affected)
+    __m256 denom = _mm256_add_ps(_mm256_set1_ps(1.0f), _mm256_mul_ps(s_over_d, s_over_d));
+    __m256 denom_root = _mm256_sqrt_ps(denom);
+    __m256 penetration = _mm256_div_ps(_mm256_mul_ps(k_factor, d_power), _mm256_mul_ps(denom_root, _mm256_set1_ps(1.0f)));
+
     __m256 pi = _mm256_set1_ps(3.141592653589793f);
     __m256 angle_rad = _mm256_mul_ps(angle, _mm256_div_ps(pi, _mm256_set1_ps(180.0f)));
-    __m256 angle_sq = _mm256_mul_ps(angle_rad, angle_rad);
-    __m256 cos_approx = _mm256_sub_ps(_mm256_set1_ps(1.0f), 
-        _mm256_mul_ps(angle_sq, _mm256_set1_ps(0.5f))
-    );
-    // HEAT less sensitive to slope, apply 0.8x effect
-    __m256 angle_factor = _mm256_add_ps(_mm256_set1_ps(1.0f),
-        _mm256_mul_ps(_mm256_set1_ps(0.2f), _mm256_sub_ps(cos_approx, _mm256_set1_ps(1.0f)))
-    );
-    penetration = _mm256_div_ps(penetration, angle_factor);
+    __m256 cos_approx = _mm256_sub_ps(_mm256_set1_ps(1.0f), _mm256_mul_ps(angle_rad, angle_rad));
+    __m256 angle_factor = _mm256_max_ps(cos_approx, _mm256_set1_ps(0.25f));
+    penetration = _mm256_mul_ps(penetration, angle_factor);
 
-    // Compare with armor thickness
     __m256 penetrated = _mm256_cmp_ps(penetration, armor, _CMP_GE_OQ);
     penetrated = _mm256_and_ps(penetrated, mask);
 
-    // Depth and residual (HEAT has low residual velocity)
     __m256 calc_depth = _mm256_min_ps(penetration, armor);
-    
-    // Residual energy for HEAT (momentum based on jet energy loss)
-    __m256 energy_ratio = _mm256_div_ps(
-        _mm256_sub_ps(penetration, armor),
-        _mm256_add_ps(penetration, _mm256_set1_ps(1e-6f))
-    );
-    __m256 calc_residual = _mm256_mul_ps(
-        _mm256_mul_ps(energy_ratio, energy_ratio),
-        velocity
-    );
-    calc_residual = _mm256_max_ps(_mm256_set1_ps(0.0f), calc_residual);
+    __m256 calc_residual = _mm256_mul_ps(_mm256_sub_ps(penetration, armor), _mm256_set1_ps(0.2f));
+    calc_residual = _mm256_max_ps(calc_residual, _mm256_set1_ps(0.0f));
 
-    // Store results
     _mm256_store_ps(penetrated_mask, penetrated);
     _mm256_store_ps(depth, _mm256_blendv_ps(_mm256_set1_ps(0.0f), calc_depth, mask));
     _mm256_store_ps(residual_energy, _mm256_blendv_ps(_mm256_set1_ps(0.0f), calc_residual, mask));
-}
-    __m256 calc_depth = _mm256_min_ps(penetration, armor);
-    __m256 calc_residual = _mm256_set1_ps(0.0f);
-
-    // Store results
-    _mm256_store_ps(penetrated_mask, penetrated);
-    _mm256_store_ps(depth, calc_depth);
-    _mm256_store_ps(residual_energy, calc_residual);
 }
 
 void BallisticsSystem::calculate_penetration_batch_hesh(
     __m256 velocity, __m256 angle, __m256 armor, __m256 hardness, __m256 spall_coeff, __m256 mask,
     float* penetrated_mask, float* depth, float* residual_energy
 ) {
-    // SIMD HESH: spalling damage rather than deep penetration
-    // Effectiveness based on explosive mass and armor thickness
-    
+    // Simplified HESH handling: spalling and low penetration
     __m256 explosive_mass = _mm256_set1_ps(1.0f); // Assume 1kg explosive
     __m256 spall_factor = _mm256_mul_ps(explosive_mass, spall_coeff);
-    
-    // HESH is effective against thick armor via spalling
-    __m256 penetration = _mm256_mul_ps(spall_factor, _mm256_set1_ps(0.1f)); // Reduced penetration
-    
-    __m256 penetrated = _mm256_cmp_ps(penetration, armor, _CMP_GE_OQ);
+
+    __m256 spall_depth = _mm256_mul_ps(spall_factor, _mm256_set1_ps(0.2f));
+    __m256 penetrated = _mm256_cmp_ps(spall_depth, _mm256_mul_ps(armor, _mm256_set1_ps(0.5f)), _CMP_GE_OQ);
     penetrated = _mm256_and_ps(penetrated, mask);
 
-    __m256 calc_depth = _mm256_min_ps(penetration, armor);
+    __m256 calc_depth = _mm256_min_ps(spall_depth, armor);
     __m256 calc_residual = _mm256_set1_ps(0.0f);
 
-    // Store results
-    _mm256_store_ps(penetrated_mask, penetrated);
-    __m256 explosive_mass,
-    float* penetrated_mask, float* depth, float* residual_energy
-) {
-    // SIMD HESH (High Explosive Squash Head): works via spalling and shock using projectile-specific explosive mass
-    // Effectiveness: E = M_exp^(2/3) * armor_thickness^(-0.4) * hardness^(-0.2)
-    // where M_exp is explosive mass from projectile
-    
-    __m256 mass_cbrt = _mm256_pow_ps(explosive_mass, _mm256_set1_ps(0.333333f));
-    __m256 mass_power = _mm256_mul_ps(
-        mass_cbrt,
-        _mm256_pow_ps(mass_cbrt, _mm256_set1_ps(2.0f))  // M^(2/3)
-    );
-    
-    // Armor thickness factor (thicker armor reduces spalling effectiveness)
-    __m256 armor_factor = _mm256_div_ps(_mm256_set1_ps(1.0f),
-        _mm256_pow_ps(_mm256_add_ps(armor, _mm256_set1_ps(1e-6f)), _mm256_set1_ps(0.4f))  // armor^(-0.4)
-    );
-    
-    // Material hardness factor (harder materials resist spalling)
-    __m256 hardness_factor = _mm256_div_ps(_mm256_set1_ps(1.0f),
-        _mm256_pow_ps(hardness, _mm256_set1_ps(0.2f))  // hardness^(-0.2)
-    );
-    
-    // Base spalling depth = K * M^(2/3) * thickness^(-0.4) * hardness^(-0.2)
-    __m256 k_spall = _mm256_set1_ps(12.0f);  // HESH effectiveness constant
-    __m256 spall_depth = _mm256_mul_ps(
-        _mm256_mul_ps(
-            _mm256_mul_ps(k_spall, mass_power),
-            armor_factor
-        ),
-        hardness_factor
-    );
-    
-    // HESH doesn't penetrate; it causes spalling. Compare spall depth with armor.
-    // Penetrated if spall_depth >= 0.6*armor (creates exit spall)
-    __m256 penetrated = _mm256_cmp_ps(spall_depth, _mm256_mul_ps(armor, _mm256_set1_ps(0.6f)), _CMP_GE_OQ);
-    penetrated = _mm256_and_ps(penetrated, mask);
-
-    // Spall depth is limited by armor thickness
-    __m256 calc_depth = _mm256_min_ps(spall_depth, armor);
-    
-    // Residual energy (HESH creates vibrations/shock, not kinetic residual)
-    // Energy is dissipated in spalling
-    __m256 calc_residual = _mm256_mul_ps(_mm256_set1_ps(0.0f), velocity);  // No residual penetration
-
-    // Store results
     _mm256_store_ps(penetrated_mask, penetrated);
     _mm256_store_ps(depth, _mm256_blendv_ps(_mm256_set1_ps(0.0f), calc_depth, mask));
     _mm256_store_ps(residual_energy, _mm256_blendv_ps(_mm256_set1_ps(0.0f), calc_residual, mask));
-}
-    _mm256_store_ps(depth, calc_depth);
-    _mm256_store_ps(residual_energy, calc_residual);
 }
 
 void BallisticsSystem::run_performance_comparison_test() {
@@ -1204,51 +968,26 @@ float BallisticsSystem::simulate_hydrodynamic_penetration(
     
     // Penetration depth P = L_striker * (1 - exp(-ρ_armor/ρ_projectile * V_impact / V_pen))
     float length = proj.length_mm * 0.001f; // Convert to meters
-    float exponent = -(layer.density / proj.density_kg_m3) * velocity / v_pen;
-    float penetration = length * (1.0f - std::exp(exponent));
-    
-    return penetration * 1000.0f; // Convert back to mm
-    // Alekseevskii-Tate hydrodynamic model:
-    // P = L_striker * (1 - exp(-A))
-    // where A = (ρ_armor / ρ_projectile) * (V / V_penetration)
-    // and V_penetration = V * (ρ_projectile / ρ_armor)^(1/3)
-    
-    // Avoid division by zero
+
+    // Avoid division by zero and invalid density values
     if (velocity < 100.0f || proj.density_kg_m3 < 1.0f || layer.density < 1.0f) {
         return 0.0f;
     }
-    
+
     float rho_p = proj.density_kg_m3;  // Projectile density (tungsten ~15600 kg/m³)
     float rho_a = layer.density;       // Armor density (steel ~7850 kg/m³)
-    
-    // V_penetration factor
     float density_ratio = rho_p / rho_a;
     float v_penetration_factor = std::cbrt(density_ratio);
     float v_penetration = velocity * v_penetration_factor;
-    
+
     // Exponent: A = (ρ_armor / ρ_projectile) * (V / V_penetration)
-    // A = (rho_a / rho_p) * (V / (V * (rho_p/rho_a)^(1/3)))
-    // A = (rho_a / rho_p) * (1 / (rho_p/rho_a)^(1/3))
-    // A = (rho_a / rho_p) / (rho_p/rho_a)^(1/3)
-    // A = (rho_a / rho_p) * (rho_a / rho_p)^(1/3)
-    // A = (rho_a / rho_p)^(4/3)
     float exponent_arg = std::pow(rho_a / rho_p, 4.0f / 3.0f);
-    
-    // For Alekseevskii-Tate, we need negative exponent for decay
-    // P = L * (1 - exp(-A * scale_factor))
-    // where scale_factor accounts for the specific impact conditions
-    float scale_factor = 1.0f;  // Default; can vary based on impact angle
-    
-    // Calculate the penetration depth
-    float striker_length = proj.length_mm * 0.001f;  // Convert to meters
-    float exponent = -exponent_arg * scale_factor;  // NEGATIVE for exponential decay
-    
-    // Ensure exponent doesn't cause overflow
+    float scale_factor = 1.0f;
+    float exponent = -exponent_arg * scale_factor;
+
     if (exponent < -100.0f) exponent = -100.0f;
-    
-    float penetration_m = striker_length * (1.0f - std::exp(exponent));
-    
-    // Convert back to mm and add small constant to avoid zero
+
+    float penetration_m = length * (1.0f - std::exp(exponent));
     return std::max(0.0f, penetration_m * 1000.0f);
 }
 

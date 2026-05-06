@@ -185,7 +185,6 @@ public:
     void remove_body(EntityID id) override;
     PhysicsBody* get_body(EntityID id) override;
     size_t get_body_count() const override { return sph_system_->get_particles().size(); }
-    size_t get_body_count() const override { return dummy_bodies_.size(); }
     const std::vector<PhysicsBody>& get_all_bodies() const override { return dummy_bodies_; }
     const char* name() const override { return "FluidSystem"; }
 
@@ -223,6 +222,11 @@ public:
      * Get SPH particles (for rendering/integration)
      */
     const std::vector<SPHParticle>& get_sph_particles() const;
+
+    /**
+     * Get SPH system pointer
+     */
+    SPHSystem* get_sph_system() { return sph_system_.get(); }
 
 private:
     std::unique_ptr<SPHSystem> sph_system_;

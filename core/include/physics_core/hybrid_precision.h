@@ -498,6 +498,8 @@ private:
     std::unordered_map<EntityID, HighPrecisionProjectile> projectiles_;
     mutable std::shared_mutex global_objects_mutex_;
     mutable std::shared_mutex projectiles_mutex_;
+    mutable std::shared_mutex local_objects_mutex_;
+    std::unordered_map<EntityID, LocalPhysicsBody> local_object_cache_;
     
     // Reference frame
     ReferenceFrame current_frame_;

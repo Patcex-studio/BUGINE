@@ -713,6 +713,7 @@ void SPHSystem::apply_boundary_forces(SPHBoundarySystem* boundary_system, Physic
         return;
     }
     
+    boundary_system_ = boundary_system;
     compute_boundary_forces_simd(boundary_system);
     boundary_system->apply_accumulated_body_forces(physics);
 }

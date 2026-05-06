@@ -94,7 +94,7 @@ void ExplosionSystem::calculate_fragmentation(
     );
     
     // Calculate ejection angles
-    std::vector<__m256> angles;
+    AlignedM256Vector angles;
     calculate_fragment_angles(explosion.fragmentation_count, angles);
     
     // Create fragment structures
@@ -283,7 +283,7 @@ void ExplosionSystem::calculate_fragment_mass_distribution(
 
 void ExplosionSystem::calculate_fragment_angles(
     uint32_t fragment_count,
-    std::vector<__m256>& direction_vectors
+    AlignedM256Vector& direction_vectors
 ) {
     direction_vectors.resize(fragment_count);
     

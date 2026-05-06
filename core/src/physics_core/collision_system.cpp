@@ -91,8 +91,8 @@ BVHNode::BVHNode() {
 // BVHCollisionSystem
 // -----------------------------------------------------------------------------
 
-BVHCollisionSystem::BVHCollisionSystem() = default;
-BVHCollisionSystem::~BVHCollisionSystem() = default;
+BVHCollisionSystem::BVHCollisionSystem() {}
+BVHCollisionSystem::~BVHCollisionSystem() {}
 
 void BVHCollisionSystem::initialize_async_builder(PhysicsThreadPool* thread_pool) {
     if (!thread_pool) {
@@ -929,7 +929,6 @@ void BVHCollisionSystem::refit_bvh(const float* positions_x, const float* positi
     for (size_t node_idx = leaf_start; node_idx < nodes_.size(); ++node_idx) {
         BVHNode& node = nodes_[node_idx];
         for (size_t lane = 0; lane < BVH_BATCH_SIZE; ++lane) {
-            if (node.entity_id[lane] != BVH_INVALID_NODE && object_idx < count) {
             if (object_idx >= count) break;
             if (node.entity_id[lane] != BVH_INVALID_NODE) {
                 // Find the corresponding object in our updated AABBs
@@ -956,9 +955,8 @@ void BVHCollisionSystem::refit_bvh(const float* positions_x, const float* positi
                     node.max_y[lane] = object_aabb_max_y_[object_idx];
                     node.max_z[lane] = object_aabb_max_z_[object_idx];
                 }
+                object_idx++;
             }
-            object_idx++;
-            if (object_idx >= count) break;
         }
         if (object_idx >= count) break;
     }
@@ -1062,7 +1060,7 @@ GJKSolver::GJKSolver() {
     #endif
 }
 
-GJKSolver::~GJKSolver() = default;
+GJKSolver::~GJKSolver() {}
 
 Vec3 GJKSolver::support_scalar(const ConvexShape& shape, const Vec3& direction) {
     return shape.support(direction);
@@ -1100,9 +1098,9 @@ Vec3 GJKSolver::support_simd(const ConvexShape& shape, const Vec3& direction) {
             __m128 mask_y = _mm_cmpgt_ps(dir_y, zero);
             __m128 mask_z = _mm_cmpgt_ps(dir_z, zero);
             
-            __m128 support_x = _mm_blendv_ps(_mm_neg_ps(he_x), he_x, mask_x);
-            __m128 support_y = _mm_blendv_ps(_mm_neg_ps(he_y), he_y, mask_y);
-            __m128 support_z = _mm_blendv_ps(_mm_neg_ps(he_z), he_z, mask_z);
+            __m128 support_x = _mm_blendv_ps(_mm_sub_ps(zero, he_x), he_x, mask_x);
+            __m128 support_y = _mm_blendv_ps(_mm_sub_ps(zero, he_y), he_y, mask_y);
+            __m128 support_z = _mm_blendv_ps(_mm_sub_ps(zero, he_z), he_z, mask_z);
             
             float sx = _mm_cvtss_f32(support_x);
             float sy = _mm_cvtss_f32(support_y);
@@ -1346,8 +1344,8 @@ bool GJKSolver::gjk_penetration_simd(GJKSimplex& simplex, __m256& penetration_di
 // EPASolver
 // -----------------------------------------------------------------------------
 
-EPASolver::EPASolver() = default;
-EPASolver::~EPASolver() = default;
+EPASolver::EPASolver() {}
+EPASolver::~EPASolver() {}
 
 bool EPASolver::expand_simplex_simd(EPASimplex& simplex, const GJKSimplex& initial) {
     // Простая реализация EPA
@@ -1486,8 +1484,8 @@ void EPASolver::extract_contact_points_simd(EPASimplex& simplex, ContactManifold
 // CCDSolver
 // -----------------------------------------------------------------------------
 
-CCDSolver::CCDSolver() = default;
-CCDSolver::~CCDSolver() = default;
+CCDSolver::CCDSolver() {}
+CCDSolver::~CCDSolver() {}
 
 float CCDSolver::compute_swept_radius(const PhysicsBody& body, float velocity) {
     float base_radius = body.bounding_radius;
@@ -1549,40 +1547,6 @@ std::vector<CCDContact> CCDSolver::query_ccd(
             return fast_bodies[a].entity_id < fast_bodies[b].entity_id;
         });
     
-    for (size_t idx : sorted_indices) {
-        const auto& body = fast_bodies[idx];
-        if (body.velocity.magnitude() < 100.0f) continue;
-        
-        // Построение swept-капсулы
-        float radius = compute_swept_radius(body, body.velocity.magnitude());
-        // SweptVolume swept{
-        //     .start = body.position,
-        //     .end = body.position + body.velocity * dt,
-        //     .radius = radius
-        // };
-        
-        // BVH запрос (упрощённо, без реального BVH)
-        // auto candidates = world_bvh.query_swept_deterministic(swept, frame_seed);
-        std::vector<EntityID> candidates = {1, 2}; // Заглушка
-        
-        for (EntityID candidate_id : candidates) {
-            if (candidate_id == body.entity_id) continue;
-            
-            // Точный TOI тест
-            PhysicsBody dummy_b; // Заглушка
-            dummy_b.position = Vec3(0, 0, 0);
-            dummy_b.velocity = Vec3(0, 0, 0);
-            dummy_b.bounding_radius = 1.0f;
-            dummy_b.entity_id = candidate_id;
-            
-            if (auto toi = compute_toi_conservative(body, dummy_b, dt)) {
-                contacts.push_back(CCDContact{
-                    .body_a = body.entity_id,
-                    .body_b = candidate_id,
-                    .toi = toi.value(),
-                    .normal = compute_contact_normal(body, dummy_b),
-                    .point = compute_contact_point(body, dummy_b, toi.value()),
-                    .penetration = 0.0f
     // Process each fast-moving body
     for (size_t idx : sorted_indices) {
         const auto& body = fast_bodies[idx];
@@ -1677,8 +1641,8 @@ std::vector<CCDContact> CCDSolver::query_ccd(
 // CollisionSystem
 // -----------------------------------------------------------------------------
 
-CollisionSystem::CollisionSystem() = default;
-CollisionSystem::~CollisionSystem() = default;
+CollisionSystem::CollisionSystem() {}
+CollisionSystem::~CollisionSystem() {}
 
 size_t CollisionSystem::register_collision_shape(CollisionShape&& shape) {
     shapes_.push_back(std::move(shape));
@@ -1768,15 +1732,14 @@ void CollisionSystem::collect_broadphase_pairs() {
         motion.start_pos = _mm256_set_ps(0.0f, static_cast<float>(shape.center.z), static_cast<float>(shape.center.y), static_cast<float>(shape.center.x), 0.0f, static_cast<float>(shape.center.z), static_cast<float>(shape.center.y), static_cast<float>(shape.center.x));
         motion.end_pos = motion.start_pos;
         float r = shape.type == CollisionShapeType::Sphere ? shape.radius : static_cast<float>(std::max({shape.half_extents.x, shape.half_extents.y, shape.half_extents.z}));
-        motion.swept_aabb = _mm256_set_ps(0.0f,
+        motion.swept_aabb = _mm256_set_ps(
             0.0f,
             static_cast<float>(shape.center.z + r),
             static_cast<float>(shape.center.y + r),
             static_cast<float>(shape.center.x + r),
+            0.0f,
             static_cast<float>(shape.center.z - r),
             static_cast<float>(shape.center.y - r),
-            static_cast<float>(shape.center.x - r),
-            0.0f
             static_cast<float>(shape.center.x - r)
         );
         motion.movement_time = 0.0f;

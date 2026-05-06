@@ -230,102 +230,56 @@ struct GJKSimplex {
 // Convex shape for GJK
 struct ConvexShape {
     enum class Type { Sphere, Box, Capsule, ConvexHull };
-    Type type;
-    Vec3 center;
-    union {
-        struct { float radius; } sphere;
-        struct { Vec3 half_extents; Mat3x3 orientation; } box;
-        struct { float radius; float half_height; Vec3 axis; } capsule;
-        struct { std::vector<Vec3> vertices; } hull;
-    };
-    
-    Vec3 support(const Vec3& direction) const {
-        switch (type) {
-            case Type::Sphere: return center + direction.normalized() * sphere.radius;
-            case Type::Box: {
-                Vec3 d = box.orientation * direction;
-                Vec3 support = Vec3(
-                    d.x > 0 ? box.half_extents.x : -box.half_extents.x,
-                    d.y > 0 ? box.half_extents.y : -box.half_extents.y,
-                    d.z > 0 ? box.half_extents.z : -box.half_extents.z
-                );
-                // Compute the part manually instead of using transpose()
-                Vec3 result = Vec3();
-                result.x = support.x * box.orientation(0,0) + support.y * box.orientation(1,0) + support.z * box.orientation(2,0);
-                result.y = support.x * box.orientation(0,1) + support.y * box.orientation(1,1) + support.z * box.orientation(2,1);
-                result.z = support.x * box.orientation(0,2) + support.y * box.orientation(1,2) + support.z * box.orientation(2,2);
-                return center + result;
-            }
-            case Type::Capsule: {
-                Vec3 dir = direction.normalized();
-                float proj = dir.dot(capsule.axis.normalized());
-                Vec3 point = capsule.axis * (proj > 0 ? capsule.half_height : -capsule.half_height);
-                return center + point + dir * capsule.radius;
-            }
-            case Type::ConvexHull: {
-                Vec3 best = hull.vertices[0];
-                float max_dot = best.dot(direction);
-                for (const auto& v : hull.vertices) {
+    using Hull = std::vector<Vec3>;
+
     struct SphereShape { float radius; };
     struct BoxShape { Vec3 half_extents; Mat3x3 orientation; };
     struct CapsuleShape { float radius; float half_height; Vec3 axis; };
-    using Hull = std::vector<Vec3>;
 
     Type type;
     Vec3 center;
     std::variant<SphereShape, BoxShape, CapsuleShape, Hull> data;
 
-    ConvexShape() = default;
-
+    // Методы проверки типа
     bool is_sphere() const { return std::holds_alternative<SphereShape>(data); }
     bool is_box() const { return std::holds_alternative<BoxShape>(data); }
     bool is_capsule() const { return std::holds_alternative<CapsuleShape>(data); }
     bool is_hull() const { return std::holds_alternative<Hull>(data); }
 
+    // Геттеры
     const SphereShape& sphere() const { return std::get<SphereShape>(data); }
     const BoxShape& box() const { return std::get<BoxShape>(data); }
     const CapsuleShape& capsule() const { return std::get<CapsuleShape>(data); }
     const Hull& hull() const { return std::get<Hull>(data); }
 
+    // Главная функция поддержки
     Vec3 support(const Vec3& direction) const {
-        switch (type) {
-            case Type::Sphere: return center + direction.normalized() * std::get<SphereShape>(data).radius;
-            case Type::Box: {
-                const BoxShape& box_shape = std::get<BoxShape>(data);
-                Vec3 d = box_shape.orientation * direction;
-                Vec3 support = Vec3(
-                    d.x > 0 ? box_shape.half_extents.x : -box_shape.half_extents.x,
-                    d.y > 0 ? box_shape.half_extents.y : -box_shape.half_extents.y,
-                    d.z > 0 ? box_shape.half_extents.z : -box_shape.half_extents.z
-                );
-                Vec3 result;
-                result.x = support.x * box_shape.orientation(0,0) + support.y * box_shape.orientation(1,0) + support.z * box_shape.orientation(2,0);
-                result.y = support.x * box_shape.orientation(0,1) + support.y * box_shape.orientation(1,1) + support.z * box_shape.orientation(2,1);
-                result.z = support.x * box_shape.orientation(0,2) + support.y * box_shape.orientation(1,2) + support.z * box_shape.orientation(2,2);
-                return center + result;
+        if (is_sphere()) {
+            return center + direction.normalized() * sphere().radius;
+        } else if (is_box()) {
+            const auto& b = box();
+            Vec3 result(center);
+            result.x += (direction.x > 0 ? b.half_extents.x : -b.half_extents.x);
+            result.y += (direction.y > 0 ? b.half_extents.y : -b.half_extents.y);
+            result.z += (direction.z > 0 ? b.half_extents.z : -b.half_extents.z);
+            return b.orientation * result;
+        } else if (is_capsule()) {
+            const auto& c = capsule();
+            Vec3 axis_dir = c.axis.normalized();
+            float dot = direction.dot(axis_dir);
+            Vec3 base_pt = (dot > 0) ? (center + axis_dir * c.half_height)
+                                     : (center - axis_dir * c.half_height);
+            return base_pt + direction.normalized() * c.radius;
+        } else { // hull
+            const auto& vertices = hull();
+            Vec3 best = vertices[0];
+            float best_dot = best.dot(direction);
+            for (size_t i = 1; i < vertices.size(); ++i) {
+                float d = vertices[i].dot(direction);
+                if (d > best_dot) { best = vertices[i]; best_dot = d; }
             }
-            case Type::Capsule: {
-                const CapsuleShape& capsule_shape = std::get<CapsuleShape>(data);
-                Vec3 dir = direction.normalized();
-                float proj = dir.dot(capsule_shape.axis.normalized());
-                Vec3 point = capsule_shape.axis * (proj > 0 ? capsule_shape.half_height : -capsule_shape.half_height);
-                return center + point + dir * capsule_shape.radius;
-            }
-            case Type::ConvexHull: {
-                const Hull& vertices = std::get<Hull>(data);
-                Vec3 best = vertices[0];
-                float max_dot = best.dot(direction);
-                for (const auto& v : vertices) {
-                    float dot = v.dot(direction);
-                    if (dot > max_dot) {
-                        max_dot = dot;
-                        best = v;
-                    }
-                }
-                return center + best;
-            }
+            return center + best;
         }
-        return center;
     }
 };
 
@@ -364,7 +318,7 @@ private:
 };
 
 struct EPASimplex {
-    __m256 vertices[32];
+    Vec3 vertices[32];
     uint32_t faces[64][3];
     int vertex_count;
     int face_count;

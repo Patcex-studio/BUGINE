@@ -44,12 +44,12 @@ TEST_F(SPHBoundariesTest, BoundaryParticleGeneration) {
 TEST_F(SPHBoundariesTest, ImpulseTransfer) {
     // Fluid particle approaching boundary
     SPHParticle fluid_particle;
-    fluid_particle.position = _mm256_setr_ps(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-    fluid_particle.velocity = _mm256_setr_ps(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f); // m/s
+    fluid_particle.position = _mm_setr_ps(0.0f, 0.0f, 0.0f, 0.0f);
+    fluid_particle.velocity = _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f); // m/s
 
     SPHParticle boundary_particle;
-    boundary_particle.position = _mm256_setr_ps(0.1f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-    boundary_particle.velocity = _mm256_setzero_ps(); // stationary
+    boundary_particle.position = _mm_setr_ps(0.1f, 0.0f, 0.0f, 0.0f);
+    boundary_particle.velocity = _mm_setzero_ps(); // stationary
 
     // Calculate interaction
     // Simplified: impulse transfer should reduce fluid velocity
@@ -63,7 +63,7 @@ TEST_F(SPHBoundariesTest, ImpulseTransfer) {
 TEST_F(SPHBoundariesTest, NoPenetration) {
     // Particle at boundary
     SPHParticle particle;
-    particle.position = _mm256_setr_ps(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    particle.position = _mm_setr_ps(0.0f, 0.0f, 0.0f, 0.0f);
 
     // Boundary at x=0
     float boundary_x = 0.0f;

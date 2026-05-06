@@ -61,16 +61,12 @@ void DestructionSystem::simulate_collapse(DestructibleObject& object, TerrainSys
     float center_x = (min_values[0] + max_values[0]) * 0.5f;
     float center_y = (min_values[1] + max_values[1]) * 0.5f;
     float center_z = (min_values[2] + max_values[2]) * 0.5f;
-    float radius = std::min(32.0f, static_cast<float>(object.fragment_count) * 0.8f + 4.0f);
-    float depth = std::min(6.0f, radius * 0.18f);
 
-    
-    // Calculate size-based crater parameters
     float size_x = max_values[0] - min_values[0];
     float size_y = max_values[1] - min_values[1];
     float size_z = max_values[2] - min_values[2];
     float avg_size = (size_x + size_y) * 0.5f;
-    
+
     float radius = std::min(40.0f, std::max(8.0f, avg_size * 1.2f));
     float depth = std::min(8.0f, radius * 0.22f);
 
@@ -96,107 +92,54 @@ void DestructionSystem::simulate_collapse(DestructibleObject& object, TerrainSys
         2.0f
     });
 
-    // Generate fragments using destruction templates (simplified: triangular fragments)
-    std::vector<EntityID> fragment_ids;
-    fragment_ids.reserve(object.fragment_count);
-    DeterministicRNG rng(static_cast<uint32_t>(object.object_id) ^ static_cast<uint32_t>(center_x) ^ static_cast<uint32_t>(center_y));
-
-    // Assume 4 main fragments for a typical component (e.g., turret)
-    uint32_t num_fragments = std::min(object.fragment_count, 4u);
-    
-    for (uint32_t i = 0; i < num_fragments; ++i) {
-        // Position along "weld lines" - simplified as corners
-        float angle = (i * 2.0f * 3.14159f) / num_fragments;
-        float dist = 0.5f; // Half size
-        Vec3 position = {
-            center_x + std::cos(angle) * dist,
-            center_y + std::sin(angle) * dist,
-            center_z
-        };
-
-        // Velocity from impact impulse + random
-        Vec3 base_velocity = impact_impulse / 1000.0f; // Scale impulse to velocity
-        Vec3 random_vel = Vec3(rng.next_float() - 0.5f, rng.next_float() - 0.5f, rng.next_float()) * 5.0f;
-        Vec3 velocity = base_velocity + random_vel;
-
-        // Mass based on size (triangular fragment)
-        float mass = 50.0f + rng.next_float() * 100.0f; // 50-150 kg
-
-        // Create rigid body
-        EntityID id = physics_core.create_rigid_body(position, mass);
-        fragment_ids.push_back(id);
-        
-        // Set velocity directly on the created body
-    // Generate realistic number of fragments based on structure
-    // Typical destruction generates 4-12 fragments depending on object size and damage
-    uint32_t num_fragments = std::min(object.fragment_count, 
-        static_cast<uint32_t>(4 + avg_size * 0.5f));  // Scale fragments with size
-    num_fragments = std::max(2u, num_fragments);      // At least 2 fragments
-    
+    uint32_t num_fragments = std::min(object.fragment_count,
+        static_cast<uint32_t>(std::max(2u, static_cast<uint32_t>(4 + avg_size * 0.5f))));
     std::vector<EntityID> fragment_ids;
     fragment_ids.reserve(num_fragments);
-    
-    // Deterministic RNG seeded from object properties
-    DeterministicRNG rng(static_cast<uint32_t>(object.object_id) ^ 
-                         static_cast<uint32_t>(center_x) ^ 
+
+    DeterministicRNG rng(static_cast<uint32_t>(object.object_id) ^
+                         static_cast<uint32_t>(center_x) ^
                          static_cast<uint32_t>(center_y) ^
                          static_cast<uint32_t>(center_z));
 
-    // Calculate impulse velocity (normalize impact impulse)
     float impulse_magnitude = impact_impulse.magnitude();
-    Vec3 impulse_direction = impulse_magnitude > 0.1f ? 
-        impact_impulse / impulse_magnitude : 
-        Vec3(0, 0, -1);  // Default downward
-    
-    float base_velocity_scale = impulse_magnitude / 10000.0f;  // Scale impulse to velocity
-    base_velocity_scale = std::max(0.1f, std::min(20.0f, base_velocity_scale));
-    
+    Vec3 impulse_direction = impulse_magnitude > 0.1f ?
+        impact_impulse / impulse_magnitude :
+        Vec3(0, 0, -1);
+
+    float base_velocity_scale = std::clamp(impulse_magnitude / 10000.0f, 0.1f, 20.0f);
+
     for (uint32_t i = 0; i < num_fragments; ++i) {
-        // Distribute fragments in expanding pattern around impact center
         float angle = (i * 2.0f * 3.14159f) / num_fragments;
-        float radius_offset = 0.3f + rng.next_float() * 0.4f;  // 0.3-0.7 of object size
+        float radius_offset = 0.3f + rng.next_float() * 0.4f;
         float distance = avg_size * radius_offset * 0.5f;
-        
+
         Vec3 fragment_position(
             center_x + std::cos(angle) * distance,
             center_y + std::sin(angle) * distance,
-            center_z + (i % 2 == 0 ? size_z * 0.25f : -size_z * 0.25f)  // Some up, some down
+            center_z + (i % 2 == 0 ? size_z * 0.25f : -size_z * 0.25f)
         );
 
-        // Calculate fragment velocity
-        // Base: direction of impulse + scatter
         Vec3 scatter = Vec3(
             (rng.next_float() - 0.5f) * 2.0f,
             (rng.next_float() - 0.5f) * 2.0f,
-            rng.next_float() * 0.5f  // Bias upward
+            rng.next_float() * 0.5f
         ).normalized();
-        
-        float scatter_strength = 0.3f + rng.next_float() * 0.4f;  // 30-70% scatter
+
+        float scatter_strength = 0.3f + rng.next_float() * 0.4f;
         Vec3 velocity = impulse_direction * base_velocity_scale;
         velocity = velocity * (1.0f - scatter_strength) + scatter * base_velocity_scale * scatter_strength;
-        
-        // Add some natural variation
-        velocity *= (0.7f + rng.next_float() * 0.6f);  // 0.7-1.3x velocity randomization
+        velocity *= (0.7f + rng.next_float() * 0.6f);
 
-        // Fragment mass varies by size
-        float mass = 20.0f + rng.next_float() * (avg_size * 10.0f);  // Size-dependent mass
-        mass = std::max(5.0f, std::min(500.0f, mass));
-
-        // Create rigid body for fragment
+        float mass = std::max(5.0f, std::min(500.0f, 20.0f + rng.next_float() * (avg_size * 10.0f)));
         EntityID id = physics_core.create_rigid_body(fragment_position, mass);
         fragment_ids.push_back(id);
-        
-        // Set velocity on fragment
+
         if (PhysicsBody* body = physics_core.get_body(id)) {
             body->velocity = velocity;
         }
     }
 
-    // Mark original for removal
-    physics_core.destroy_body(object.object_id);
-    object.structural_integrity = 0.0f;
-    object.fragment_count = std::max<uint32_t>(object.fragment_count, 1u);
-    // Destroy original object
     physics_core.destroy_body(object.object_id);
     object.structural_integrity = 0.0f;
     object.fragment_count = num_fragments;

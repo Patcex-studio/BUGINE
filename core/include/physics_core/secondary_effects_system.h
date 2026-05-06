@@ -21,8 +21,31 @@
 #include <vector>
 #include <cstdint>
 #include <immintrin.h>
+#include <memory>
 #include "damage_system.h"
 #include "types.h"
+
+// Aligned allocator for SIMD types
+template <typename T, std::size_t Alignment>
+struct AlignedAllocator {
+    using value_type = T;
+    AlignedAllocator() = default;
+    template <typename U>
+    AlignedAllocator(const AlignedAllocator<U, Alignment>&) {}
+    T* allocate(std::size_t n) {
+        void* p = std::aligned_alloc(Alignment, n * sizeof(T));
+        if (!p) throw std::bad_alloc();
+        return static_cast<T*>(p);
+    }
+    void deallocate(T* p, std::size_t) { std::free(p); }
+};
+
+// Typedef for aligned __m256
+using AlignedM256 = __attribute__((aligned(32))) float[8];
+using AlignedM256Vector = std::vector<AlignedM256, AlignedAllocator<AlignedM256, 32>>;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
 
 namespace physics_core {
 
@@ -166,7 +189,7 @@ private:
     // Calculate fragment ejection angles
     static void calculate_fragment_angles(
         uint32_t fragment_count,
-        std::vector<__m256>& direction_vectors
+        AlignedM256Vector& direction_vectors
     );
 };
 
@@ -488,5 +511,7 @@ private:
         float distance_m
     );
 };
+
+#pragma GCC diagnostic pop
 
 } // namespace physics_core

@@ -63,7 +63,7 @@ void PhysicsCore::initialize(size_t thread_count, int integrator_type) {
     destruction_system_ = std::make_unique<DestructionSystem>();
 
     // Create specialized subsystems
-    thermal_system_ = std::make_unique<ThermalSystem>(fluid_system_.get());
+    thermal_system_ = std::make_unique<ThermalSystem>(fluid_system_->get_sph_system());
     acoustics_system_ = std::make_unique<AcousticsSystem>();
     crew_damage_system_ = std::make_unique<CrewDamageSystem>();
     hybrid_precision_ = std::make_unique<HybridPrecisionSystem>();

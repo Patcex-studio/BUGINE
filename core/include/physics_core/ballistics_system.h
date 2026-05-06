@@ -54,18 +54,6 @@ struct ImpactParameters {
     float flight_time;                         // Flight duration (seconds)
     
     // Environmental factors
-    float temperature_celsius;                 // Ambient temperature
-    float humidity_percent;                    // Humidity percentage
-    float air_pressure_pa;                     // Air pressure
-    __m256 impact_position;                    // Impact position (m, world space)
-    __m256 impact_normal;                      // Surface normal (unit vector)
-    __m256 impact_velocity_vector;             // Velocity vector at impact (m/s)
-    
-    // Time data
-    float time_to_impact;                      // Time from firing to impact (ms)
-    float flight_time;                         // Flight duration (s)
-    
-    // Environmental factors
     float temperature_celsius;                 // Ambient temperature (°C)
     float humidity_percent;                    // Humidity percentage (%)
     float air_pressure_pa;                     // Air pressure (Pa)
@@ -75,9 +63,6 @@ struct ImpactParameters {
 struct PenetrationResult {
     bool penetrated;                           // Whether armor was penetrated
     float penetration_depth;                   // How deep it penetrated (mm)
-    float residual_energy;                     // Remaining kinetic energy (joules)
-    float ricochet_probability;                // Chance of ricochet (0.0-1.0)
-    float spall_damage;                        // Secondary spalling damage
     float residual_energy;                     // Remaining kinetic energy (J)
     float ricochet_probability;                // Chance of ricochet (0.0-1.0)
     float spall_damage;                        // Secondary spalling damage (J)
@@ -90,8 +75,6 @@ struct ImpactData {
     float impact_velocity;                     // Velocity at impact (m/s)
     float distance_traveled;                   // Distance projectile traveled (m)
     float standoff_distance;                   // For HEAT projectiles (mm)
-    __m128 impact_position;                    // Impact position (x,y,z)
-    __m128 impact_normal;                      // Surface normal at impact
     __m128 impact_position;                    // Impact position (m, x,y,z)
     __m128 impact_normal;                      // Surface normal (unit vector)
 };
@@ -323,6 +306,9 @@ public:
     static void calculate_penetration_batch_hesh(
         __m256 velocities, __m256 angles, __m256 thicknesses,
         __m256 material_factors, __m256 masses, __m256 densities,
+        float* penetrated_mask, float* depth, float* residual_energy
+    );
+
     // APFSDS batch processing (uses parametrized projectile data)
     static void calculate_penetration_batch_apfsds(
         __m256 velocity, __m256 angle, __m256 armor, __m256 hardness, __m256 spall_coeff, __m256 mask,
@@ -387,53 +373,6 @@ private:
         float armor_hardness
     );
 
-    // Determine ricochet-critical impact angle
-    static float calculate_ricochet_angle(
-        const ArmorCharacteristics& armor,
-        float impact_angle_deg
-    );
-
-    // Generate behind-armor fragment effects
-    static void calculate_behind_armor_effects(
-        const ArmorCharacteristics& armor,
-        const BallisticImpactResult& impact,
-        std::vector<Fragment>& effects
-    );
-
-    // Determine ERA activation and modify impact
-    static bool calculate_era_activation(
-        const ArmorCharacteristics& armor,
-        const BallisticImpactResult& impact,
-        BallisticImpactResult& modified_impact
-    );
-
-    // Composite armor interaction model
-    static bool calculate_composite_armor_interaction(
-        const ArmorCharacteristics& armor,
-        float impact_velocity_ms,
-        float impact_angle_deg,
-        BallisticImpactResult& result
-    );
-
-    // Ballistic coefficient for trajectory/drag calculations
-    static float calculate_ballistic_coefficient(
-        const ProjectileCharacteristics& projectile
-    );
-
-    // Aerodynamic drag force estimation
-    static float calculate_drag_force(
-        const ProjectileCharacteristics& projectile,
-        float velocity_ms,
-        float air_density_kg_m3
-    );
-
-    // Velocity degradation over distance due to drag
-    static float calculate_velocity_degradation(
-        const ProjectileCharacteristics& projectile,
-        float distance_m,
-        float air_density_kg_m3
-    );
-
     // Fragment speed distribution after impact
     static void calculate_fragment_velocities(
         const ArmorCharacteristics& armor,
@@ -462,15 +401,7 @@ private:
         const ImpactParameters& impact,
         const ArmorCharacteristics& armor
     );
-    
-    // Calculate penetration capability using De Marre formula
-    static float calculate_de_marre_penetration(
-        float projectile_mass_kg,
-        float projectile_velocity_ms,
-        float projectile_diameter_mm,
-        float armor_hardness_factor
-    );
-    
+
     // Calculate HEAT jet penetration depth
     static float calculate_heat_jet_penetration(
         float charge_diameter_mm,
@@ -490,35 +421,6 @@ private:
         const ArmorCharacteristics& armor,
         float penetration_depth_mm,
         float impact_energy_joules
-    );
-    
-    // Calculate fragment velocities
-    static void calculate_fragment_velocities(
-        const ArmorCharacteristics& armor,
-        float penetration_depth_mm,
-        float impact_energy_joules,
-        std::vector<float>& fragment_velocities
-    );
-    
-    // Calculate energy transfer
-    static float calculate_energy_transfer(
-        const ArmorCharacteristics& armor,
-        float penetration_depth_mm,
-        float impact_energy_joules
-    );
-    
-    // Get armor material properties for calculations
-    static void get_effective_material_properties(
-        const ArmorCharacteristics& armor,
-        float& hardness_factor,
-        float& density_kg_m3,
-        float& yield_strength
-    );
-    
-    // Apply environmental modifiers (temperature, humidity, etc.)
-    static float apply_environmental_modifiers(
-        const ImpactParameters& impact,
-        const ArmorCharacteristics& armor
     );
 
     // Multi-layered armor penetration calculation

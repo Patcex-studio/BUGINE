@@ -61,16 +61,6 @@ BallisticImpactResult DamageSystem::calculate_ballistic_impact(
     if (result.is_penetrated) {
         // Estimate exit position based on armor thickness and angle
         float exit_depth = result.penetration_depth_mm;
-        __m256 exit_offset = {
-            impact_params.impact_normal[0] * exit_depth * 0.001f,
-            impact_params.impact_normal[1] * exit_depth * 0.001f,
-            impact_params.impact_normal[2] * exit_depth * 0.001f,
-            0.0f
-        };
-        result.exit_position = result.impact_position;
-        result.exit_position[0] += exit_offset[0];
-        result.exit_position[1] += exit_offset[1];
-        result.exit_position[2] += exit_offset[2];
         alignas(32) float normal[8];
         _mm256_store_ps(normal, impact_params.impact_normal);
         __m256 exit_offset = _mm256_set_ps(
@@ -186,9 +176,6 @@ void DamageSystem::apply_damage_to_vehicle(
     
     for (auto& component : vehicle_state.component_damage_states) {
         // Calculate distance from impact position
-        float distance_x = component.damage_position[0] - impact.impact_position[0];
-        float distance_y = component.damage_position[1] - impact.impact_position[1];
-        float distance_z = component.damage_position[2] - impact.impact_position[2];
         alignas(32) float impact_pos[8];
         _mm256_store_ps(impact_pos, impact.impact_position);
         alignas(32) float comp_pos[8];
@@ -416,15 +403,16 @@ void DamageSystem::calculate_vehicle_status(
         
         // Mobility-related components (engine, tracks, suspension)
         if (comp.damage_position[0] != 0 || comp.damage_position[1] != 0 || comp.damage_position[2] != 0) {
-        alignas(32) float damage_pos[8];
-        _mm256_store_ps(damage_pos, comp.damage_position);
-        if (damage_pos[0] != 0.0f || damage_pos[1] != 0.0f || damage_pos[2] != 0.0f) {
-            // Simplified component type detection based on naming convention
-            // In real implementation, would have component type stored
-            total_mobility_health += health_ratio;
-            mobility_components++;
-            if (health_ratio < 0.5f) {
-                vehicle_state.mobility_contributing_damage++;
+            alignas(32) float damage_pos[8];
+            _mm256_store_ps(damage_pos, comp.damage_position);
+            if (damage_pos[0] != 0.0f || damage_pos[1] != 0.0f || damage_pos[2] != 0.0f) {
+                // Simplified component type detection based on naming convention
+                // In real implementation, would have component type stored
+                total_mobility_health += health_ratio;
+                mobility_components++;
+                if (health_ratio < 0.5f) {
+                    vehicle_state.mobility_contributing_damage++;
+                }
             }
         }
         

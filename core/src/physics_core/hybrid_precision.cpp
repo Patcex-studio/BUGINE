@@ -153,13 +153,15 @@ void HybridPrecisionSystem::apply_pending_shift() {
             std::unique_lock<std::shared_mutex> lock(global_objects_mutex_);
             for (auto& [id, obj] : global_objects_) {
                 // Update global position by subtracting offset (origin moved, so local coords appear shifted back)
-                obj.position -= offset;
-                
+                obj.global_pos[0] -= offset.x;
+                obj.global_pos[1] -= offset.y;
+                obj.global_pos[2] -= offset.z;
+
                 // Mark as needing resync to local frame
                 {
                     std::unique_lock<std::shared_mutex> local_lock(local_objects_mutex_);
                     if (local_object_cache_.count(id)) {
-                        local_object_cache_[id].needs_update = true;
+                        local_body_utils::mark_dirty(local_object_cache_[id]);
                     }
                 }
             }
@@ -169,7 +171,9 @@ void HybridPrecisionSystem::apply_pending_shift() {
         {
             std::unique_lock<std::shared_mutex> lock(projectiles_mutex_);
             for (auto& proj : projectiles_) {
-                proj.position -= offset;
+                proj.second.start_pos[0] -= offset.x;
+                proj.second.start_pos[1] -= offset.y;
+                proj.second.start_pos[2] -= offset.z;
             }
         }
         

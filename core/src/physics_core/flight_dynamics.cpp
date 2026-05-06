@@ -775,10 +775,6 @@ void FlightDynamicsSystem::apply_flight_forces_to_physics(
         propulsion.yaw_moment
     );
     physics.apply_torque(aircraft_entity, prop_torque);
-
-    // Apply weight separately so PhysicsCore can integrate gravity consistently.
-    Vec3 weight_force(0.0f, 0.0f, -state.mass_kg * GRAVITY_MS2);
-    physics.apply_force(aircraft_entity, weight_force);
 }
 
 void FlightDynamicsSystem::initialize_from_modular_aircraft(
@@ -888,8 +884,6 @@ void FlightDynamicsSystem::simulate_rotor_blade_flapping(
     float cyclic
 ) {
     float flapping_angle = (collective + cyclic * 0.5f) * 0.08f;
-    float coning_effect = std::min(0.25f, std::abs(flapping_angle));
-    (void)coning_effect;
     // Blade flapping dynamics for helicopters
     // Flapping occurs due to differential lift across the rotor disk
     
@@ -942,12 +936,6 @@ void FlightDynamicsSystem::apply_ground_effect(float altitude_m, float& lift_coe
     }
 }
 
-void FlightDynamicsSystem::model_vortex_ring_state(
-    float descent_rate
-) {
-    if (descent_rate < -5.0f) {
-        float vortex_loss = std::min(0.7f, (-descent_rate - 5.0f) * 0.05f);
-        (void)vortex_loss;
 void FlightDynamicsSystem::calculate_ground_effect(float altitude) {
     // Ground effect for helicopters
     // Effect diminishes with altitude above ground
@@ -1069,6 +1057,7 @@ void FlightDynamicsSystem::model_vortex_ring_state(HelicopterState& heli, float 
         heli.vortex_ring_state = false;
         // Dampen vibrations
         heli.vibration_level *= 0.95f;
+    }
     // Vortex Ring State detection and simulation for helicopter dynamics
     // VRS conditions: steep descent (>5 m/s) + low horizontal speed (<10 m/s)
     // This is a dangerous condition where rotor enters its own wake
@@ -1098,7 +1087,7 @@ void FlightDynamicsSystem::model_vortex_ring_state(HelicopterState& heli, float 
         heli.vibration_level = std::min(1.0f, heli.vibration_level + vrs_severity * 0.15f);
         
         // Pilot feedback: control response degrades
-        heli.control_authority_loss = vrs_severity * 0.5f;  // 0-50% control loss
+        // heli.control_authority_loss = vrs_severity * 0.5f;  // TODO: add field or use alternative
     } else {
         // Exiting or not in VRS
         heli.vortex_ring_state = false;
@@ -1107,7 +1096,7 @@ void FlightDynamicsSystem::model_vortex_ring_state(HelicopterState& heli, float 
         heli.vibration_level *= 0.95f;
         
         // Restore control authority
-        heli.control_authority_loss = 0.0f;
+        // heli.control_authority_loss = 0.0f;
     }
 }
 

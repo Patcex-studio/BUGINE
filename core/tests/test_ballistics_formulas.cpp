@@ -44,16 +44,18 @@ protected:
 
         // Setup test component
         component = {
-            1,          // component_id
-            1,          // parent_vehicle_id
+            1,                          // component_id
+            1,                          // parent_vehicle_id
             ComponentType::HULL,
-            1000.0f,    // max health
-            100.0f,     // current health
-            50.0f,      // thickness mm
-            ArmorType::ROLLED_HOMOGENEOUS,
-            0.0f,       // angle
-            {0.0f, 0.0f, 0.0f}, // position
-            {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f} // rotation
+            1000.0f,                    // max health
+            100.0f,                     // current health
+            50.0f,                      // thickness mm
+            0.0f,                       // angle
+            ArmorType::RHA,             // material_type
+            VulnerabilityFlags::NONE,   // vulnerability_flags
+            _mm256_setzero_ps(),        // local_transform
+            _mm256_setzero_ps(),        // world_aabb_min
+            _mm256_setzero_ps()         // world_aabb_max
         };
 
         impact = {
@@ -96,7 +98,7 @@ TEST_F(BallisticsFormulasTest, EnergyConservation) {
     auto result = BallisticsSystem::calculate_penetration(projectile, component, impact);
 
     // Initial kinetic energy
-    float initial_energy = 0.5f * projectile.mass * projectile.muzzle_velocity * projectile.muzzle_velocity;
+    float initial_energy = 0.5f * projectile.mass * projectile.velocity_muzzle * projectile.velocity_muzzle;
 
     // Energy should be conserved (some absorbed by armor)
     float total_energy = result.residual_energy + (result.spall_damage * 1000.0f); // approximate

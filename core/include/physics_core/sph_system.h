@@ -411,6 +411,7 @@ private:
     float* pressure_ = nullptr;
     float* mass_ = nullptr;
     float* viscosity_ = nullptr;
+    class SPHBoundarySystem* boundary_system_ = nullptr;
     
     // Thermal data (aligned for SIMD)
     alignas(64) std::vector<float> temp_particle_data_;
